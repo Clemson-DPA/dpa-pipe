@@ -1,0 +1,18 @@
+#!/usr/autodesk/maya2014-x64/bin/mayapy
+
+import sys
+
+import maya.standalone
+maya.standalone.initialize()
+
+from dpa.app.cli import ClApp
+
+# ------------------------------------------------------------------------------
+class ClMaya(ClApp):
+    
+    name = 'clmaya'
+
+# ------------------------------------------------------------------------------
+if __name__ == "__main__":
+    sys.exit(ClMaya.cli())
+

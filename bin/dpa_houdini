@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# Temporary wrapper script for launching alternate Houdini versions.
+#
+# This is for people who want to test out Houdini 13 with the DPA pipeline
+# environment already pulled down. It clobbers the current user environment,
+# which, at the time of writing, should be set up for Houdini 12.
+#
+# This does NOT solve the problem of not having Houdini 13's bin dir on the
+# user's $PATH, so this is only a temporary solution. It is useful only for
+# launching the "main" Houdini application.
+#
+# Author: Paul Kilgo (pkilgo@clemson.edu)
+#
+set -eu
+
+# Set Houdini location to site-configured default if it doesn't exist.
+HFS="/opt/hfs13"
+
+# Source Houdini setup.
+pushd "${HFS}" >/dev/null
+set +u; source houdini_setup_bash -q; set -u
+popd >/dev/null
+
+# Set up environment variables for DPA plugins.
+userdir="${HOME}/houdini${HOUDINI_MAJOR_RELEASE}.${HOUDINI_MINOR_RELEASE}"
+
+HOUDINI_OTLSCAN_PATH="${HFS}/houdini/otls:/group/dpa/plugins/houdiniPlugins"
+#HOUDINI_OTLSCAN_PATH="${HOUDINI_OTLSCAN_PATH}:${HFS}/houdini/otls:/group/dpa/plugins/houdiniPlugins"
+HOUDINI_OTLSCAN_PATH="${HOUDINI_OTLSCAN_PATH}:${userdir}/otls"
+
+HOUDINI_TOOLBAR_PATH="${HFS}/houdini/toolbar:/group/dpa/plugins/houdiniPlugins"
+#HOUDINI_TOOLBAR_PATH="${HOUDINI_TOOLBAR_PATH}:${HFS}/houdini/toolbar:/group/dpa/plugins/houdiniPlugins"
+HOUDINI_TOOLBAR_PATH="${HOUDINI_TOOLBAR_PATH}:${userdir}/toolbar"
+
+export HOUDINI_OTLSCAN_PATH HOUDINI_TOOLBAR_PATH
+unset userdir
+
+alias mantra="${HFS}/bin/mantra"
+alias mplay="${HFS}/bin/mplay"
+
+
+exec "${HFS}/bin/houdini" "$@"

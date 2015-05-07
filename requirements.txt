@@ -1,0 +1,9 @@
+colorama==0.2.7
+ordereddict==1.1
+parsedatetime==1.4
+python-dateutil==2.2
+PyYAML==3.10
+requests==2.2
+rpyc==3.3.0
+Sphinx==1.2
+sphinx-rtd-theme==0.1

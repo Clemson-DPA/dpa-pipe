@@ -1,0 +1,120 @@
+#!/usr/bin/env python 
+""" Command line interface to the DPA pipeline."""
+
+# ------------------------------------------------------------------------------
+# Imports:
+# ------------------------------------------------------------------------------
+
+import argparse
+import sys
+
+# ---- import the appropriate actions
+
+from dpa.action import ActionError
+from dpa.action.registry import ActionRegistry
+from dpa.cli.action import CommandLineAction
+
+# ------------------------------------------------------------------------------
+# Classes:
+# ------------------------------------------------------------------------------
+class DPA(CommandLineAction):
+
+    name = "dpa"
+
+    # --------------------------------------------------------------------------
+    # Properties:
+    # --------------------------------------------------------------------------
+    @classmethod
+    def setup_cl_args(cls, parser):
+
+        action_subparsers = parser.add_subparsers(
+            title="Actions",
+        )
+
+        # get all available actions
+        # sort the actions by name + target type
+        registry = ActionRegistry()
+        all_actions = sorted(registry.get_registered_actions(),
+            key=lambda a: a.name + a.target_type )
+
+        by_action = {}
+        for action_class in all_actions:
+            action_name = action_class.name
+            action_list = by_action.setdefault(action_name, [])
+            action_list.append(action_class)
+
+        for action_name in sorted(by_action.keys()):
+
+            action_parser = action_subparsers.add_parser(action_name, help="")
+            target_subparsers = None
+
+            for action_class in by_action[action_name]:
+
+                target_type = action_class.target_type
+
+                # no subparser
+                if target_type.lower() == "none":
+                    if len(by_action[action_name]) > 1:
+                        raise ActionError(
+                            "Multiple actions with target of 'none'"
+                        )
+
+                    target_parser = action_parser
+                # subparser
+                else:
+                    if not target_subparsers:
+                        target_subparsers = action_parser.add_subparsers(
+                            title="Targets",
+                        )
+
+                    # add a parser for the target_type
+                    target_parser = target_subparsers.add_parser(
+                        target_type,
+                        help=action_class.get_description(),
+                    )
+
+                # extend the target_parser based on the action's args
+                action_class.setup_cl_args(target_parser)
+
+                # set the class for this target parser
+                target_parser.set_defaults(action_class=action_class)
+
+    # --------------------------------------------------------------------------
+    # Instance methods:
+    # --------------------------------------------------------------------------
+    def __init__(self, *args, **kwargs):
+
+        super(DPA, self).__init__(*args, **kwargs)
+
+        action_class = self.kwargs.pop('action_class')
+        self._action = action_class(*self.args, **self.kwargs)
+        self._action.interactive = True
+
+    # --------------------------------------------------------------------------
+    # Instance methods:
+    # --------------------------------------------------------------------------
+    def execute(self):
+        self.action()
+
+    # --------------------------------------------------------------------------
+    def log_action(self):
+
+        # only log if the action class to be executed has logging turned on
+        if self.action.__class__.logging:
+            super(DPA, self).log_action()
+
+    # --------------------------------------------------------------------------
+    def undo(self):
+        self.action.undo()
+
+    # --------------------------------------------------------------------------
+    # Properties:
+    # --------------------------------------------------------------------------
+    @property
+    def action(self):
+        return self._action
+
+# ------------------------------------------------------------------------------
+if __name__ == "__main__":
+    sys.exit(DPA.cli())
+

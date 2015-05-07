@@ -1,0 +1,15 @@
+#!/opt/hfs13/bin/hython
+
+import sys
+
+from dpa.app.cli import ClApp
+
+# ------------------------------------------------------------------------------
+class ClHoudini(ClApp):
+    
+    name = 'clhoudini'
+
+# ------------------------------------------------------------------------------
+if __name__ == "__main__":
+    sys.exit(ClHoudini.cli())
+

@@ -1,0 +1,33 @@
+
+The bash file in this directory is used to activate the dpa pipeline in a shell
+environment. It can be sourced directly or it can be called from within a bash
+function. If you plan to use a virtualenv for your dpa-pipe installation, you
+can set the $DPA_VIRTUAL_ENV variable before sourcing this file and it will
+activate the virtualenv for you. Also included here is a bash function called
+'pipedown' that will deactivate the pipeline within your shell. 
+
+Example of activating the pipeline in ~/.bashrc:
+
+    ...
+    export DPA_VIRTUAL_ENV="/path/to/virtualenv"        # <<< change path
+    source __DPA_FILESYSTEM_ROOT__/bash/activate.bash
+    ...
+
+Alternatively, you can define a function in your .bashrc to activate:
+
+    ...
+    export DPA_VIRTUAL_ENV="/path/to/virtualenv"        # <<< change path
+    pipeup () {
+        # path to the 
+        source __DPA_FILESYSTEM_ROOT__/bash/activate.bash
+    }
+    ...
+
+Then you can type:
+
+    # activate the pipeline
+    > pipeup
+
+    # deactivate the pipeline
+    > pipedown
+

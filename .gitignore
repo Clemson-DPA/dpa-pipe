@@ -1,54 +1,19 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
+
+# Ignore compiled python files
 *.py[cod]
 
-# C extensions
-*.so
+# Ignore vim temporary and swap files
+*~
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
 
-# Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
+# Documentation build
+docs/build
+
+# Setuptools artifacts
 *.egg
+*.egg-info
+dist/*
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.cache
-nosetests.xml
-coverage.xml
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
+# Tox artifacts
+.tox

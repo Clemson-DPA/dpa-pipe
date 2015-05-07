@@ -1,2 +1,0 @@
-# dpa-pipe
-DPA pipeline

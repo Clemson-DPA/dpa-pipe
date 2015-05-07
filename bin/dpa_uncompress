@@ -1,0 +1,94 @@
+#!/usr/bin/python
+
+#dpauncompress
+# Kacey Coley
+# October 31, 2013
+# Tool for people who are too lazy to use the flags to uncompress various
+# archive files.  Currently supports zip, tar, tar.gz and tgz
+#
+# Syntax: dpauncompress file.ext [uncompress directory]
+
+# -----------------------------------------------------------------------------
+
+import os
+import os.path
+import sys
+import shutil
+import subprocess
+
+# -----------------------------------------------------------------------------
+def extractArchive(archiveBase, extension, archiveDir):
+    if extension == ".zip":
+        try:
+            print "Un-zipping " + archiveBase + extension + " to " 
+            print archiveDir
+            subprocess.call(["unzip", "-q", "-o", "-d", archiveDir, archiveBase + extension])
+        except:
+            print "Could not unzip file " + archiveBase + extension
+    elif extension == ".tar":
+        try:
+            print "Un-taring..." + archiveBase +  extension + " to "
+            print archiveDir
+            if not os.path.exists(archiveDir):
+                os.makedirs(archiveDir)
+            subprocess.call(["tar", "xvf", archiveBase + extension, "-C", archiveDir ])
+        except:
+            print "Could not untar file " + archiveBase + extension
+    elif extension == ".tar.gz" or extension == ".tgz":
+        try:
+            print "Un-targzing..." + archiveBase +  extension + " to "
+            print archiveDir
+            if not os.path.exists(archiveDir):
+                os.makedirs(archiveDir)
+            subprocess.call(["tar", "-zxvf",archiveBase  + extension, "-C", archiveDir])
+        except:
+            print "Could not untar.gz file " + archiveBase  + extension
+    elif extension == ".rar":
+        try:
+            print "Un-rarring " + archiveBase + extension + " to " 
+            print archiveDir
+            if not os.path.exists(archiveDir):
+                os.makedirs(archiveDir)
+            subprocess.call(["unrar", "x", archiveBase  + extension, "-e", archiveDir])
+        except:
+            print "Could not unrar file " + archiveBase  + extension
+    elif extension == ".7z":
+        try:
+            print "Un-7z-ing " + archiveBase + extension + " to " 
+            print archiveDir
+            if not os.path.exists(archiveDir):
+                os.makedirs(archiveDir)
+            subprocess.call(["7za", "x", archiveBase + extension, "-o"+ archiveDir])
+        except:
+            print "Could not un-7z file " + archiveBase  + extension
+    else:
+        print "Cannot unarchive " + archiveBase +  extension
+
+# -----------------------------------------------------------------------------
+def main():
+    if len(sys.argv) < 4:
+        archiveBase = "" 
+        archiveExtension = ""
+        archiveDir = ""
+        archiveName = sys.argv[1]
+        
+        try:
+            archiveBase,archiveExtension = os.path.splitext(archiveName)
+            if archiveExtension in ['.gz']:
+                archiveBase,archiveExtension2 = os.path.splitext(archiveBase)
+                archiveExtension = archiveExtension2 + archiveExtension
+            if len(sys.argv) == 3:
+                archiveDir = os.path.abspath(sys.argv[2])
+                archiveDir += "/" +  os.path.basename(archiveBase)
+            else:
+                archiveDir = "."
+        except:
+            print archiveDir
+            print "Improper archive file"
+            return
+        extractArchive(archiveBase, archiveExtension, archiveDir)
+
+# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    main()
+
