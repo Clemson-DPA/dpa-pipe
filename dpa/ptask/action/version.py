@@ -82,6 +82,8 @@ class PTaskVersionAction(Action):
         if self.latest_version != self.source_version:
             self._source_non_latest()
 
+        self._refresh_subs()
+
         print "\nVersion up successful!\n"
 
     # -------------------------------------------------------------------------
@@ -337,4 +339,22 @@ class PTaskVersionAction(Action):
                 "Unable to copy forward some subscriptions:\n\n" + \
                     "\n".join(msgs)
             )
+
+    # -------------------------------------------------------------------------
+    def _refresh_subs(self):
+
+        if self.interactive:
+            print "\nRefreshing subscriptions."
+            
+        # refresh the subscriptions on disk
+        refresh_action_cls = ActionRegistry().get_action('refresh', 'subs')
+        if not refresh_action_cls:
+            raise ActionError("Could not find sub refresh action.")
+
+        try:
+            refresh_action = refresh_action_cls(self.ptask)
+            refresh_action.interactive = False
+            refresh_action()
+        except ActionError as e:
+            raise ActionError("Failed to refresh subs on disk: " + str(e))
 
