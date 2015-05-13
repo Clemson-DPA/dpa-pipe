@@ -171,7 +171,6 @@ class PTaskCreateAction(Action):
         if self.source:
             self._source_another_ptask()
 
-        return self.__class__.ENTITY_CATEGORY
         if self.interactive:
             print "\nSuccessfully created: " + \
                 Style.bright + self.ptask.spec + Style.reset + "\n"
