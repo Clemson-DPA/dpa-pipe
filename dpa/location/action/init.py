@@ -86,7 +86,7 @@ class LocationInitAction(Action):
         dir_lookup = {}
 
         # create standard directories ('projects', 'bash', 'config', etc.)
-        for dir_name in ['bash', 'projects', 'config', '.logs']:
+        for dir_name in ['bash', 'projects', 'config', '.logs', 'plugins']:
             dir_path = os.path.join(fs_root, dir_name)
             dir_lookup[dir_name] = dir_path
             if not os.path.isdir(dir_path):
