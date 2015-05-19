@@ -113,6 +113,8 @@ class WorkfileEntity(Entity):
                 remote_session.save(bake_references=True, overwrite=True)
         """
 
+        product_repr.area.set_permissions(0660)
+
         return [product_repr]
 
 # -----------------------------------------------------------------------------
