@@ -21,7 +21,9 @@ class HoudiniSession(RemoteMixin, Session):
     # -------------------------------------------------------------------------
     def __init__(self, filepath=None, remote=False):
 
-        self._hou = self.init_module('hou', remote)
+        super(HoudiniSession, self).__init__(remote=remote)
+
+        self._hou = self.init_module('hou')
 
         if filepath:
             self.open_file(filepath)

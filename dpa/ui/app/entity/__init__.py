@@ -78,8 +78,8 @@ class EntityTreeWidgetItem(QtGui.QTreeWidgetItem):
     def __init__(self, entity):
 
         self._entity = entity
-        
-        super(EntityTreeWidgetItem, self).__init__([entity.name])
+
+        super(EntityTreeWidgetItem, self).__init__([entity.display_name])
         self.setFlags(QtCore.Qt.ItemIsSelectable| QtCore.Qt.ItemIsEnabled)
 
     # -------------------------------------------------------------------------

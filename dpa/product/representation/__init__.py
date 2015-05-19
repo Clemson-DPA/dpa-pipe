@@ -91,6 +91,12 @@ class ProductRepresentation(CreateMixin, GetMixin, ListMixin, RestfulObject):
 
     # -------------------------------------------------------------------------
     @property
+    def area(self):
+        from dpa.ptask.area import PTaskArea    
+        return PTaskArea(self.spec, validate=False)
+
+    # -------------------------------------------------------------------------
+    @property
     def creator(self):
         return User.get(self.creator_username)
 

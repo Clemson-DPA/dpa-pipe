@@ -146,8 +146,10 @@ class EntityExportWizard(QtGui.QWizard):
             if not entity.exportable:
                 continue
 
+            entity_inst = entity.name + str(entity.instance)
+
             try:
-                publish_match = product_lookup[entity.name][entity.category]
+                publish_match = product_lookup[entity_inst][entity.category]
             except:
                 self._exportable_entities.append(entity)
             else:
@@ -237,8 +239,10 @@ class EntityExportWizard(QtGui.QWizard):
 
             option_config = entity.option_config('export')
 
+            display_name = entity.display_name + "  (" + entity.category + ")"
+
             option_widget = ActionOptionWidget(option_config, 
-                name=entity.product_name)
+                name=display_name)
             option_header = option_widget.header
 
             form_layout = QtGui.QFormLayout()
@@ -247,9 +251,16 @@ class EntityExportWizard(QtGui.QWizard):
             spacer = QtGui.QLabel()
             spacer.setFixedWidth(10)
 
-            form_layout.addRow(spacer, option_widget)
+            form_layout.addRow(option_widget)
 
             options_layout.addLayout(form_layout)
+
+            h_rule = QtGui.QFrame()
+            h_rule.setLineWidth(0)
+            h_rule.setMidLineWidth(0)
+            h_rule.setFrameStyle(QtGui.QFrame.HLine | QtGui.QFrame.Plain)
+
+            options_layout.addWidget(h_rule)
 
             self._options[entity]['widget'] = option_widget
             self._options[entity]['header'] = option_header
@@ -310,7 +321,8 @@ class EntityExportWizard(QtGui.QWizard):
             entity = entity_item.entity
 
             existing_products = [p for p in products 
-                if p.name == entity.name and p.category == entity.category]
+                if p.name == entity.display_name and 
+                   p.category == entity.category]
 
             product_desc = QtGui.QLineEdit()
             if existing_products:
