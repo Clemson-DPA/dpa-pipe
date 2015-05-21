@@ -118,13 +118,16 @@ class Config(OrderedDict):
         composite_config = Config()
 
         for config in configs:
-            
+
             # make sure we have a config object
             if not isinstance(config, Config):
                 path = config
                 if not os.path.exists(path):
                     continue
                 config = Config.read(path)
+
+            if not config:
+                continue
 
             if method == "override":
                 composite_config.override(config)
@@ -157,8 +160,7 @@ class Config(OrderedDict):
                 format(p=path))
         
         try:
-            config = Config(_ordered_load(file(path, 'r')))
-            return config
+            return _ordered_load(file(path, 'r'))
         except YAMLError as exc:
             msg = "Problem reading config file: " + path
             if hasattr(exc, 'problem_mark'):
@@ -341,7 +343,7 @@ class Config(OrderedDict):
                 g: 7
 
         """
-        
+
         for key, new_value in override_config.iteritems():
             if isinstance(new_value, Config):
                 cur_value = self.get(key, None)
@@ -354,6 +356,7 @@ class Config(OrderedDict):
 
     # -------------------------------------------------------------------------
     def append(self, append_config):
+
         for key, new_value in append_config.iteritems():
             if isinstance(new_value, Config):
                 cur_value = self.get(key, None)

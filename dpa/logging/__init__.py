@@ -76,7 +76,7 @@ class Logger(object):
     # Class methods:
     # ------------------------------------------------------------------------
     @classmethod
-    def get(cls, name):
+    def get(cls, name=None):
 
         if not name:
             name = "dpa"
