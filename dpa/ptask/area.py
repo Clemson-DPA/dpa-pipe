@@ -297,6 +297,20 @@ class PTaskArea(object):
                 print shell.set_prompt(no_ptask_prompt)
 
     # -------------------------------------------------------------------------
+    def set_permissions(self, mode):
+
+        files = os.listdir(self.path)
+
+        for file_name in sorted(files):
+            path = os.path.join(self.path, file_name)
+            try:
+                os.chmod(path, mode)
+            except Exception as e:
+                Logger.get().warning(
+                    "Unable to set permissions for path: {p}".format(p=path)
+                )
+
+    # -------------------------------------------------------------------------
     # Properties:
     # -------------------------------------------------------------------------
     @property

@@ -429,7 +429,7 @@ class ActionOptionText(ActionOption, QtGui.QTextEdit):
         return str(self.toPlainText())
 
 # -----------------------------------------------------------------------------
-class ActionOptionGroup(ActionOption, QtGui.QFrame):
+class ActionOptionGroup(ActionOption, QtGui.QWidget):
 
     option_type = 'group'
 
@@ -439,13 +439,8 @@ class ActionOptionGroup(ActionOption, QtGui.QFrame):
     def __init__(self, name, config, parent=None):
         
         ActionOption.__init__(self, name, config)
-        QtGui.QFrame.__init__(self, parent=parent)
+        QtGui.QWidget.__init__(self, parent=parent)
 
-        if name and name != 'root':
-            self.setLineWidth(1)
-            self.setMidLineWidth(1)
-            self.setFrameStyle(QtGui.QFrame.StyledPanel | QtGui.QFrame.Sunken) 
-        
         self._open = config.get('open', True)
         self._options = config.get('options', Config())
 
@@ -455,9 +450,8 @@ class ActionOptionGroup(ActionOption, QtGui.QFrame):
 
         self._widgets = []
 
-        options = config.get('options', {})
 
-        for (option_name, option_config) in options.iteritems():
+        for (option_name, option_config) in self._options.iteritems():
 
             if not isinstance(option_config, Config):
                 continue
@@ -488,7 +482,9 @@ class ActionOptionGroup(ActionOption, QtGui.QFrame):
                     option_layout.addWidget(required_lbl)
                 else:
                     widget.header.layout.addWidget(required_lbl)
-                    
+
+        if len(self._widgets) == 0:
+            self._main_layout.addWidget(QtGui.QLabel("No options"))
 
         self.setLayout(self._main_layout)
 

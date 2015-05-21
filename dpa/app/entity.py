@@ -123,6 +123,18 @@ class Entity(object):
 
     # -------------------------------------------------------------------------
     @property
+    def display_name(self):
+
+        if not hasattr(self, "_display_name"):
+
+            self._display_name = self.name
+            if self.instance:
+                self._display_name += str(self.instance)
+
+        return self._display_name
+
+    # -------------------------------------------------------------------------
+    @property
     def exportable(self):
         return True
 
@@ -142,7 +154,7 @@ class Entity(object):
     def product_name(self):
         """Returns the product name for this entity."""
 
-        return PTaskSpec.SEPARATOR.join([self.name, self.category])
+        return PTaskSpec.SEPARATOR.join([self.display_name, self.category])
 
     # -------------------------------------------------------------------------
     @property

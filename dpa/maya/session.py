@@ -44,9 +44,10 @@ class MayaSession(RemoteMixin, Session):
     # -------------------------------------------------------------------------
     def __init__(self, file_path=None, remote=False):
 
-        super(MayaSession, self).__init__()
+        super(MayaSession, self).__init__(remote=remote)
 
-        self._cmds = self.init_module('maya.cmds', remote)
+        self._cmds = self.init_module('maya.cmds')
+        self._mel = self.init_module('maya.mel')
 
         if file_path:
             self.open_file(file_path)
@@ -91,6 +92,10 @@ class MayaSession(RemoteMixin, Session):
             self.cmds.file(save=True)
 
     # -------------------------------------------------------------------------
+    def selected(self, selection_list, dependencies=False):
+        return SelectionContext(self, selection_list, dependencies=dependencies)
+
+    # -------------------------------------------------------------------------
     @property
     def cmds(self):
         return self._cmds
@@ -122,8 +127,40 @@ class MayaSession(RemoteMixin, Session):
 
     # -------------------------------------------------------------------------
     @property
+    def mel(self):
+        return self._mel
+        
+    # -------------------------------------------------------------------------
+    @property
     def server_executable(self):
         return self.__class__.SERVER_EXECUTABLE
+
+# -----------------------------------------------------------------------------
+class SelectionContext(object):
+
+    def __init__(self, session, selection_list, dependencies=False):
+        self._session = session
+        self._selection_list = selection_list
+        self._dependencies = dependencies
+
+    # ------------------------------------------------------------------------
+    def __enter__(self):
+        
+        # store current selection state
+        self._saved_selection = self._session.cmds.ls(selection=True) 
+
+        # select selection list
+        self._session.cmds.select(self._selection_list, replace=True,
+            allDependencyNodes=self._dependencies)
+        
+    # ------------------------------------------------------------------------
+    def __exit__(self, exc_type, exc_value, traceback):
+
+        # restore selection list
+        if self._saved_selection:
+            self._session.cmds.select(self._saved_selection, replace=True)
+
+        return False
 
 # -----------------------------------------------------------------------------
 SessionRegistry().register(MayaSession)

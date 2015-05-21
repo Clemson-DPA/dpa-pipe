@@ -88,7 +88,7 @@ class Session(object):
         """Returns True if inside a current app session."""
 
     # -------------------------------------------------------------------------
-    def init_module(self, module_path, remote):
+    def init_module(self, module_path):
 
         _module = None
 
@@ -158,6 +158,11 @@ class RemoteMixin(object):
     __metaclass__ = ABCMeta 
 
     # -------------------------------------------------------------------------
+    def __init__(self, remote=False):
+        
+        self._remote = remote
+
+    # -------------------------------------------------------------------------
     def __del__(self):
         self.shutdown()
 
@@ -212,11 +217,11 @@ class RemoteMixin(object):
                 self._remote_connection = None
 
     # -------------------------------------------------------------------------
-    def init_module(self, module_path, remote):
+    def init_module(self, module_path):
 
         _module = None
 
-        if remote:
+        if self.remote:
 
             # need to give time for standalone app to import properly
             tries = 0
