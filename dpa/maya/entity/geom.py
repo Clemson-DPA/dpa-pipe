@@ -97,13 +97,6 @@ class GeomEntity(Entity):
         export_path = os.path.join(product_repr_dir, 
             self.display_name + "." + file_ext)
 
-        # what is chosen should follow how previous OBJ exported, for sanit
-        # 1. duplicate mesh
-        # 2. convert duplicated mesh to smooth-mesh-div-preview
-        # 3. use the duplicated mesh as the mesh to export
-        # 4. remove the duplicated mesh, leaving the low-poly mesh
-
-
         with self.session.selected([self.display_name], dependencies=True):
         	self.session.mel.eval('CreatePolyFromPreview;')
 	        self.session.cmds.file(export_path, force=True, type='OBJexport', exportSelected=True,
