@@ -397,6 +397,9 @@ class EntityExportWizard(QtGui.QWizard):
             entity = entity_item.entity
             desc_edit = self._descriptions[entity]['widget']
 
+            if not desc_edit.isVisible():
+                continue
+
             if not str(desc_edit.text()):
                 finish_btn.setEnabled(False)
                 return
