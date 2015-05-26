@@ -17,6 +17,8 @@ from dpa.app.session import RemoteMixin, Session, SessionRegistry, SessionError
 # -----------------------------------------------------------------------------
 class MariSession(RemoteMixin, Session):
 
+    app_name = 'mari'
+
     # XXX should come from config
     SERVER_EXECUTABLE = "/home/gguerre/pipedev/dpa-pipe/bin/dpa_mari_server"
 
@@ -53,26 +55,26 @@ class MariSession(RemoteMixin, Session):
     # -------------------------------------------------------------------------
     def save(self, file_path=None, archive=True, overwrite=False):
 
-    	# check to see if there's a project open?
-    	# otherwise don't do anything else...?
-    	project = self.mari.projects.current()
-    	
-    	if project: 
-    		if archive:
-    			if file_path:
-    				if os.path.exists(file_path) and not overwrite:
-	    				raise SessionError(
-	    					"Cannot save '{f}'. File exists.".format(f=file_path))
-    			
-	    			project.save(force_save=True)
-	    			project.close(confirm_if_modified=False)
-	    			self.mari.projects.archive(project.uuid(),file_path)
-	    		else:
-	    			raise SessionError("Cannot archive without a filepath.")
-    		else:
-    			project.save(force_save=True)
-    	else:
-    		raise SessionError("No opened Mari project to save/archive.")
+        # check to see if there's a project open?
+        # otherwise don't do anything else...?
+        project = self.mari.projects.current()
+        
+        if project: 
+            if archive:
+                if file_path:
+                    if os.path.exists(file_path) and not overwrite:
+                        raise SessionError(
+                            "Cannot save '{f}'. File exists.".format(f=file_path))
+                
+                    project.save(force_save=True)
+                    project.close(confirm_if_modified=False)
+                    self.mari.projects.archive(project.uuid(),file_path)
+                else:
+                    raise SessionError("Cannot archive without a filepath.")
+            else:
+                project.save(force_save=True)
+        else:
+            raise SessionError("No opened Mari project to save/archive.")
 
     # -------------------------------------------------------------------------
     @property
