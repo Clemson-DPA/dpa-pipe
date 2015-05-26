@@ -319,6 +319,28 @@ class PTaskArea(object):
 
     # -------------------------------------------------------------------------
     @property
+    def children(self):
+        
+        child_ptasks = []
+        for child_dir in self.dirs(children=True):
+            child_spec = PTaskSpec.get(child_dir, relative_to=self.spec)
+            child_ptasks.append(PTaskArea(child_spec))
+        return child_ptasks
+
+    # -------------------------------------------------------------------------
+    @property
+    def siblings(self):
+        
+        parent_spec = PTaskSpec.parent(self.spec)
+        try:
+            parent_area = PTaskArea(parent_spec)
+        except PTaskAreaError:
+            return []
+
+        return [c for c in parent_area.children if c.spec != self.spec]
+
+    # -------------------------------------------------------------------------
+    @property
     def product_spec(self):
         return self._product_spec
 
