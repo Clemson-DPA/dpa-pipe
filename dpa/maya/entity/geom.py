@@ -98,10 +98,10 @@ class GeomEntity(Entity):
             self.display_name + "." + file_ext)
 
         with self.session.selected([self.display_name], dependencies=True):
-        	self.session.mel.eval('CreatePolyFromPreview;')
-	        self.session.cmds.file(export_path, force=True, type='OBJexport', exportSelected=True,
-	        	options='groups=0;ptgroups=0;materials=0;smoothing=1;normals=0')
-	        self.session.cmds.undo()
+            self.session.mel.eval('CreatePolyFromPreview;')
+            self.session.cmds.file(export_path, force=True, type='OBJexport', exportSelected=True,
+                options='groups=0;ptgroups=0;materials=0;smoothing=1;normals=0')
+            self.session.cmds.undo()
 
         product_repr.area.set_permissions(0660)
 
