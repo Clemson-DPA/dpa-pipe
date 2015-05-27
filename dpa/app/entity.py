@@ -129,7 +129,7 @@ class Entity(object):
 
             self._display_name = self.name
             if self.instance:
-                self._display_name += str(self.instance)
+                self._display_name += "_" + str(self.instance)
 
         return self._display_name
 
