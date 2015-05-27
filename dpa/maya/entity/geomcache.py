@@ -141,7 +141,7 @@ class GeomcacheEntity(Entity):
 
         export_path = os.path.join(product_repr_dir, self.display_name)
 
-        with self.session.selected(export_objs, dependencies=True):
+        with self.session.selected(export_objs, dependencies=False):
             self.session.mel.eval(
                 'FBXExport -f "{path}" -s'.format(path=export_path))
 

@@ -1,5 +1,6 @@
 
 import os.path
+import re
 
 from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
@@ -10,6 +11,9 @@ from dpa.maya.session import MayaSession
 class WorkfileEntity(Entity):
 
     category = "workfile"
+
+    export_set_regex = re.compile(
+        "^export_{cat}_([^_]+)_?(\d+)?$".format(cat=category), re.IGNORECASE)
 
     # -------------------------------------------------------------------------
     @staticmethod
@@ -29,12 +33,27 @@ class WorkfileEntity(Entity):
     
         file_base = cls._get_file_base_name(session)
 
-        # name has to match the base name of the file for 'workfile' entities.
-
-        if name == file_base:
+        # name has to match the base name of the file for the default
+        # 'workfile' entity
+        if name == file_base and not instance:
             return cls(name, session)
-        else:
-            return None
+
+        # doesn't match. look for a matching export group
+        set_names = cls.get_export_sets(session)
+
+        fullname = name
+        if instance:
+            fullname += "_" + str(instance)
+
+        matches = [s for s in set_names if s.endswith(fullname)]
+
+        if not matches and len(matches) != 1:
+            raise EntityError(
+                "Could not find unique {cat} {name} instance in session.".\
+                    format(cat=cls.category, name=fullname)
+            )
+
+        return cls(name, session, instance)
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -50,26 +69,34 @@ class WorkfileEntity(Entity):
     def list(cls, session):
         """Retrieve all entities of this category from the supplied session."""
 
+        entities = []
+
+        # get the default workfile entity
         file_base = cls._get_file_base_name(session)
+        entities.append(cls.get(file_base, session))
 
-        # there can be only one workfile, so just use get
-        entity = cls.get(file_base, session)
+        # get the export sets
+        set_names = cls.get_export_sets(session)
+        for set_name in set_names:
 
-        if entity:
-            return [entity]
-        else:
-            return []
+            name_parts = cls.export_set_regex.match(set_name)
+            if not name_parts:
+                continue
+
+            (name, instance) = name_parts.groups()
+
+            if not instance:
+                instance=None
+        
+            entities.append(cls(name, session, instance))
+
+        return entities
 
     # -------------------------------------------------------------------------
     def export(self, product_desc=None, version_note=None, bake_references=True):
         """Export this entity to a product."""
 
-        session_file = self.session.file_path
-
-        (file_base, file_ext) = os.path.splitext(
-            os.path.split(session_file)[-1])
-
-        file_type = file_ext.lstrip(".")
+        file_type = 'ma'
 
         # use the product create action to create the product if it doesn't
         # exist.
@@ -78,7 +105,7 @@ class WorkfileEntity(Entity):
             raise EntityError("Unable to find product creation action.")
 
         create_action = create_action_cls(
-            product=self.name,
+            product=self.display_name,
             ptask=self.session.ptask_version.ptask_spec,
             version=self.session.ptask_version.number,
             category=self.category,
@@ -97,28 +124,61 @@ class WorkfileEntity(Entity):
         product_repr_dir = product_repr.directory
 
         product_repr_file = os.path.join(
-            product_repr_dir, self.name + file_ext)
+            product_repr_dir, self.display_name + "." + file_type)
 
-        self.session.save(file_path=product_repr_file, overwrite=True)
-
-        # XXX WTF??? rpyc + Maya == suck apparently. possibly due to maya's
-        # python api not being thread safe. need to investigate, but no time
-        # now. 
-        """
-        if bake_references:
-
-            with MayaSession(file_path=product_repr_file, remote=True) \
-                as remote_session:
-
-                remote_session.save(bake_references=True, overwrite=True)
-        """
+        if self.display_name == self.__class__._get_file_base_name(self.session):
+            self.session.cmds.file(
+                product_repr_file, 
+                type='mayaAscii', 
+                exportAll=True, 
+                force=True, 
+                preserveReferences=(not bake_references),
+            )
+        else:
+            export_set = self._get_export_set()
+            export_objs = self.session.cmds.sets(export_set, query=True)
+            with self.session.selected(export_objs, dependencies=False):
+                self.session.cmds.file(
+                    product_repr_file, 
+                    type='mayaAscii', 
+                    exportSelected=True,
+                    force=True, 
+                    preserveReferences=(not bake_references),
+                )
 
         product_repr.area.set_permissions(0660)
 
         return [product_repr]
 
+     # -----------------------------------------------------------------------------
+    def _get_export_set(self):
+
+        # make sure the name exists. 
+        set_names = self.__class__.get_export_sets(self.session)
+        matches = [s for s in set_names if s.endswith(self.display_name)]
+
+        if not matches and len(matches) != 1:
+            raise EntityError("Unable to identify export set for entity!")
+
+        return matches[0]
+
+    # -----------------------------------------------------------------------------
+    @classmethod
+    def get_export_sets(cls, session):
+
+        export_sets = []
+        maya_sets = session.cmds.ls(sets=True)
+        for maya_set in maya_sets:
+            match = cls.export_set_regex.match(maya_set)
+            if match:
+                export_sets.append(maya_set)
+
+        return export_sets
+
 # -----------------------------------------------------------------------------
 class WorkfileReferenceEntity(WorkfileEntity):
+
+    # XXX do we need this?
 
     # -------------------------------------------------------------------------
     @classmethod
