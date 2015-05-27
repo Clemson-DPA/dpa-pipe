@@ -6,16 +6,13 @@ from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
 from dpa.app.entity import Entity, EntityRegistry, EntityError
 
-# options: 
-# export types: (can be both) fbx, alembic
-
 # -----------------------------------------------------------------------------
 class GeomcacheEntity(Entity):
 
     category = "geomcache"
+
     export_set_regex = re.compile(
-        "^export_{cat}$".format(cat=category), re.IGNORECASE)
-    name_regex = re.compile("^([^\d]+)(\d*)$")
+        "^export_{cat}_([^_]+)_?(\d+)?$".format(cat=category), re.IGNORECASE)
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -23,16 +20,18 @@ class GeomcacheEntity(Entity):
         """Retrieve an entity instance from the supplied session."""
 
         # make sure the name exists. 
-        obj_names = cls.get_all_objects(session)
+        set_names = cls.get_export_sets(session)
 
         fullname = name
         if instance:
-            fullname += instance
+            fullname += "_" + str(instance)
 
-        if not fullname in obj_names:
+        matches = [s for s in set_names if s.endswith(fullname)]
+
+        if not matches and len(matches) != 1:
             raise EntityError(
-                "Could not find {cat} {name} instance in session.".format(
-                    cat=cls.category, name=fullname)
+                "Could not find unique {cat} {name} instance in session.".\
+                    format(cat=cls.category, name=fullname)
             )
 
         return cls(name, session, instance)
@@ -47,11 +46,11 @@ class GeomcacheEntity(Entity):
 
         entities = []
 
-        obj_names = cls.get_all_objects(session)
+        set_names = cls.get_export_sets(session)
 
-        for obj_name in obj_names:
+        for set_name in set_names:
 
-            name_parts = cls.name_regex.match(obj_name)
+            name_parts = cls.export_set_regex.match(set_name)
             if not name_parts:
                 continue
 
@@ -102,15 +101,20 @@ class GeomcacheEntity(Entity):
         export_path = os.path.join(product_repr_dir, 
             self.display_name + "." + file_ext)
 
-        dag_path = self.session.cmds.ls(self.display_name, l=True)[0]
+        export_set = self._get_export_set()
+        export_objs = self.session.cmds.sets(export_set, query=True)
+        export_roots = ""
+        for export_obj in export_objs:
+            dag_path = self.session.cmds.ls(export_obj, l=True)[0]
+            export_roots += "-root " + dag_path + " "
+
         frame_start = self.session.cmds.playbackOptions(query=True, minTime=True)
         frame_end = self.session.cmds.playbackOptions(query=True, maxTime=True)
 
-        self.session.mel.eval(
-            'AbcExport -j "-fr {fs} {fe} -root {dp} -file {path}"'.format(
-                fs=frame_start, fe=frame_end, dp=dag_path, path=export_path
-            )
-        )
+        cmd = 'AbcExport -j "{roots} -fr {fs} {fe} -file {path}"'.format(
+            roots=export_roots, fs=frame_start, fe=frame_end, path=export_path)
+
+        self.session.mel.eval(cmd)
 
         product_repr.area.set_permissions(0660)
         
@@ -132,9 +136,12 @@ class GeomcacheEntity(Entity):
         product_repr = self._create_product(product_desc, version_note, file_ext)
         product_repr_dir = product_repr.directory
 
+        export_set = self._get_export_set()
+        export_objs = self.session.cmds.sets(export_set, query=True)
+
         export_path = os.path.join(product_repr_dir, self.display_name)
 
-        with self.session.selected([self.display_name], dependencies=True):
+        with self.session.selected(export_objs, dependencies=False):
             self.session.mel.eval(
                 'FBXExport -f "{path}" -s'.format(path=export_path))
 
@@ -172,23 +179,29 @@ class GeomcacheEntity(Entity):
         return product_repr
 
     # -----------------------------------------------------------------------------
-    @classmethod
-    def get_all_objects(cls, session):
+    def _get_export_set(self):
 
-        geomcache_set = None
+        # make sure the name exists. 
+        set_names = self.__class__.get_export_sets(self.session)
+        matches = [s for s in set_names if s.endswith(self.display_name)]
+
+        if not matches and len(matches) != 1:
+            raise EntityError("Unable to identify export set for entity!")
+
+        return matches[0]
+
+    # -----------------------------------------------------------------------------
+    @classmethod
+    def get_export_sets(cls, session):
+
+        export_sets = []
         maya_sets = session.cmds.ls(sets=True)
         for maya_set in maya_sets:
             match = cls.export_set_regex.match(maya_set)
             if match:
-                geomcache_set = maya_set                
-                break
+                export_sets.append(maya_set)
 
-        if not geomcache_set:
-            return []
-
-        entities = []
-
-        return session.cmds.sets(geomcache_set, query=True)
+        return export_sets
 
 # -----------------------------------------------------------------------------
 EntityRegistry().register('maya', GeomcacheEntity)
