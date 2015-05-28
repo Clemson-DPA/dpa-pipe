@@ -36,3 +36,5 @@ def uninitializePlugin():
         if shelf.exists:
             shelf.delete()
 
+
+initializePlugin()
