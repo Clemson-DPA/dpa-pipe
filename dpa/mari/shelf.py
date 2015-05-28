@@ -8,15 +8,20 @@ from PySide import QtGui, QtCore
 class MariShelf(object):
 
     # -------------------------------------------------------------------------
-    def __init__(self, name, layout=None, palette=None):
+    def __init__(self, name, layout=None, widget=None, palette=None):
         self._name = name
 
         if not layout:
-            layout = QtGui.QWidget()
+            layout = QtGui.QVBoxLayout()
         self._layout = layout
 
+        if not widget:
+            widget = QtGui.QWidget()
+            widget.setLayout(self.layout)
+        self._widget = widget
+
         if not palette:
-            palette = mari.palettes.create(name, layout)
+            palette = mari.palettes.create(name, widget)
         self._palette = palette
 
         self._palette.show()
@@ -27,6 +32,9 @@ class MariShelf(object):
         import sys
         # so not sure if this is going to work, yay programming!
         # intercept/adjust some of the arguments
+        label = ''
+        cmd = ''
+
         for (key, val) in kwargs.iteritems():
 
             # get label
@@ -41,13 +49,13 @@ class MariShelf(object):
             if key.startswith("image") and IconFactory.is_icon_path(val):
                 button = QtGui.QPushButton(
                     QtGui.QPixmap(self.icon_factory.disk_path(val)), label)
-                QtCore.connect(button.clicked, cmd)
+                button.clicked.connect(lambda: self._exec_cmd(cmd))
                 self.layout.addWidget(button)
 
     # -------------------------------------------------------------------------
     def create(self):
-        self.palette = mari.palettes.create(self.name, self.layout)
-        self.palette.show()
+        self._palette = mari.palettes.create(self.name, self.widget)
+        self._palette.show()
 
     # -------------------------------------------------------------------------
     def delete(self):
@@ -81,3 +89,14 @@ class MariShelf(object):
     @property
     def name(self):
         return self._name
+
+    # -------------------------------------------------------------------------
+    @property
+    def widget(self):
+        return self._widget
+
+    # -------------------------------------------------------------------------
+    def _exec_cmd(self, cmd):
+        # to work with the way the shelves.cfg is setup
+        if cmd:
+            exec cmd

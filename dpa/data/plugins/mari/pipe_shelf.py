@@ -8,7 +8,7 @@ CONFIG_FILE = 'config/mari/shelves.cfg'
 INITIALIZED_SHELVES = []
 
 # -----------------------------------------------------------------------------
-def initializePlugin(mobject):
+def initializePlugin():
 
     # read the config, get all the shelf definitions
     ptask_area = PTaskArea.current()
@@ -30,7 +30,7 @@ def initializePlugin(mobject):
         INITIALIZED_SHELVES.append(shelf)
     
 # -----------------------------------------------------------------------------
-def uninitializePlugin(mobject):
+def uninitializePlugin():
 
     for shelf in INITIALIZED_SHELVES:
         if shelf.exists:
