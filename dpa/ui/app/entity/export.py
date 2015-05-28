@@ -146,10 +146,10 @@ class EntityExportWizard(QtGui.QWizard):
             if not entity.exportable:
                 continue
 
-            entity_inst = entity.name + str(entity.instance)
+            entity_name = entity.display_name
 
             try:
-                publish_match = product_lookup[entity_inst][entity.category]
+                publish_match = product_lookup[entity_name][entity.category]
             except:
                 self._exportable_entities.append(entity)
             else:

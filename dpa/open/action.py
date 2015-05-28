@@ -41,7 +41,7 @@ class OpenAction(Action):
         # everything else
         parser.add_argument(
             "args",
-            nargs=argparse.REMAINDER,
+            nargs='*',
         )
 
     # ------------------------------------------------------------------------
@@ -51,6 +51,7 @@ class OpenAction(Action):
         self._filename = filename
         self._args = args
         self._noop = noop
+        self._command = None
 
     # ------------------------------------------------------------------------
     def execute(self):
@@ -105,14 +106,23 @@ class OpenAction(Action):
         if not self._software in self.config.software:
             raise ActionError(
                 "Don't know how to launch software: " + self._software)
-        else:
-            if not self.operating_system in \
-                self.config.software[self._software]:
-                raise ActionError(
-                    "No open command for os: " + self.operating_system)
-            else:
-                self._command = self.config.\
-                    software[self._software][self.operating_system]
+
+        if not self.operating_system in self.config.software[self._software]:
+            raise ActionError(
+                "No open command for os: " + self.operating_system)
+
+        # try to use the '<OS>_no_file' key. Thanks maya.
+        if not self._filename:
+            no_file_key = self.operating_system + "_no_file"
+            try:
+                self._command = \
+                    self.config.software[self._software][no_file_key]
+            except KeyError as e:
+                pass
+
+        if not self._command:            
+            self._command = self.config.\
+                software[self._software][self.operating_system]
 
     # ------------------------------------------------------------------------
     @property
