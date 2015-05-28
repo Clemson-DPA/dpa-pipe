@@ -3,6 +3,8 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import defaultdict
 import os
 
+from dpa.action import ActionError
+from dpa.action.registry import ActionRegistry
 from dpa.config import Config
 from dpa.ptask.spec import PTaskSpec
 from dpa.singleton import Singleton
@@ -65,6 +67,34 @@ class Entity(object):
     @abstractmethod
     def export(self, *args, **kwargs):
         """Export this entity to a product."""
+
+    # -------------------------------------------------------------------------
+    def _create_product(self, product_desc, version_note, file_type,
+        resolution="none"):
+
+        # use the product create action to create the product if it doesn't
+        # exist.
+        create_action_cls = ActionRegistry().get_action('create', 'product')
+        if not create_action_cls:
+            raise EntityError("Unable to find product creation action.")
+
+        create_action = create_action_cls(
+            product=self.display_name,
+            ptask=self.session.ptask_version.ptask_spec,
+            version=self.session.ptask_version.number,
+            category=self.category,
+            description=product_desc,
+            file_type=file_type,
+            resolution=resolution,
+            note=version_note,
+        )
+
+        try:
+            create_action()
+        except ActionError as e:
+            raise EntityError("Unable to export entity: " + str(e))
+
+        return create_action.product_repr
 
     # -------------------------------------------------------------------------
     def option_config(self, action):
