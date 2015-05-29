@@ -2,6 +2,7 @@
 import os
 import time
 
+# -----------------------------------------------------------------------------
 # attempt to import mari module. if it fails, not in a mari session.
 try: 
     import mari
@@ -9,6 +10,15 @@ except ImportError:
     MARI_IMPORTED = False
 else:
     MARI_IMPORTED = True
+
+# -----------------------------------------------------------------------------
+# attempt to import maya ui module. if it fails, not in the UI
+try:
+    from PySide import QtCore, QtGui
+except:
+    MARI_UI_IMPORTED = False
+else:
+    MARI_UI_IMPORTED = True
 
 # -----------------------------------------------------------------------------
 
@@ -21,6 +31,13 @@ class MariSession(RemoteMixin, Session):
 
     # XXX should come from config
     SERVER_EXECUTABLE = "/home/gguerre/pipedev/dpa-pipe/bin/dpa_mari_server"
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def current(cls):
+        if not MARI_IMPORTED:
+            return None
+        return cls()
 
     # -------------------------------------------------------------------------
     def __init__(self, file_path=None, remote=False):
@@ -86,6 +103,19 @@ class MariSession(RemoteMixin, Session):
     def in_session(self):
         """Returns True if inside a current app session."""
         return MARI_IMPORTED or self.remote_connection
+
+    # -------------------------------------------------------------------------
+    @property
+    def main_window(self):
+        """Returns the Qt main window used to parent dialogs/widgets."""
+
+        if not MARI_UI_IMPORTED:
+            return None
+
+        if not hasattr(self, '_main_window'):
+            self._main_window = QtGui.QWidget()
+
+        return self._main_window
 
     # -------------------------------------------------------------------------
     @property
