@@ -78,6 +78,10 @@ _populate_sys_path()
 print "Loading MariSession"
 import dpa.mari.session
 
+# register Mari Entityies
+print "Loading Mari Entities"
+import dpa.mari.entity.maps
+
 # do the loading
 print "Loading DPA mari plugins..."
 _import_mari_plugins()
