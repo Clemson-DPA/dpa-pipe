@@ -10,6 +10,7 @@ from dpa.app.entity import Entity, EntityRegistry, EntityError
 class MapsEntity(Entity):
 
     category = "maps"
+    importable = False
 
     #-------------------------------------------------------------------------
     def export(self, product_desc=None, version_note=None, tif_export=True,

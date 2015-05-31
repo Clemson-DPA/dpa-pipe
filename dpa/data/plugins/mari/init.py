@@ -81,6 +81,7 @@ import dpa.mari.session
 # register Mari Entityies
 print "Loading Mari Entities"
 import dpa.mari.entity.maps
+import dpa.mari.entity.geom
 
 # do the loading
 print "Loading DPA mari plugins..."
