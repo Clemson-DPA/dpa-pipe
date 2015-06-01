@@ -48,6 +48,8 @@ class PTaskVersionDialog(SessionActionDialog):
         if not self._confirm():
             return 
 
+        self.session.save()
+
         # handles closing the dialog
         super(PTaskVersionDialog, self).accept()
 
@@ -99,6 +101,7 @@ class PTaskVersionDialog(SessionActionDialog):
 
         confirm_message += """
             </table><br><br>
+            Continuing will save your current session.<br><br>
             <b>Version up?</b>
         """
 
