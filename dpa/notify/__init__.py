@@ -24,12 +24,14 @@ class Notification(object):
 
         recipients = ", ".join(self.recipients)
         msg['To'] = recipients
-        
+
         s = smtplib.SMTP('localhost')
         try:
-            s.sendmail(self.sender, recipients, msg.as_string())
+            s.sendmail(self.sender, self.recipients, msg.as_string())
         except Exception as e:
             raise NotificationError("Failed to send notification: " + str(e))
+
+        s.quit()
 
     # -------------------------------------------------------------------------
     @property
