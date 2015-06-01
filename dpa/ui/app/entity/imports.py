@@ -37,19 +37,18 @@ class EntityImportWizard(QtGui.QWizard):
 
         self._query_categories()
 
-        query_id = self.addPage(self.entity_query_page)
-        selection_id = self.addPage(self.entity_selection_page)
+        query_id = self.addPage(self.product_query_page)
+        selection_id = self.addPage(self.product_selection_page)
         options_id = self.addPage(self.import_options_page)
         confirm_id = self.addPage(self.import_confirm_page)
 
         self.setOption(QtGui.QWizard.CancelButtonOnLeft, on=True)
 
-        self.entity_widget.itemSelectionChanged.connect(self._toggle_options)
+        self.product_widget.itemSelectionChanged.connect(self._toggle_options)
 
         self.setButtonText(QtGui.QWizard.FinishButton, 'Export')
 
         self.currentIdChanged.connect(self._check_descriptions)
-
 
     # -------------------------------------------------------------------------
     def accept(self):
@@ -121,9 +120,9 @@ class EntityImportWizard(QtGui.QWizard):
     def initializePage(self, event):
         super(EntityImportWizard, self).initializePage(event)
 
-        if self._entity_selection_page == self.currentPage():
+        if self._product_selection_page == self.currentPage():
             print "entity selection page"
-            self._query_entities()
+            self._query_products()
 
     # -------------------------------------------------------------------------
     def _query_categories(self): 
@@ -135,34 +134,50 @@ class EntityImportWizard(QtGui.QWizard):
         for entity in entity_classes:
             if not entity.importable:
                 continue
+
             self._entity_categories.append(entity.category)
          
     # -------------------------------------------------------------------------
-    def _query_entities(self):
+    def _query_products(self):
         # find all available published products based on input
         products = Product.list(category=self.query_values['category'],
             search=self.query_values['spec'],
             name=self.query_values['name'])
 
-        print products
+        self._importable_products = []
+
+        for product in products:
+            print product.spec
+            print self.query_values['official']
+            print self.query_values['published']
+            print self.query_values['deprecated']
+
+            if self.query_values['published']:
+                if self.query_values['official']:
+                    if not self.query_values['deprecated']:
+                        product_versions = ProductVersion.list(
+                            product=product.spec,
+                            published=self.query_values['published'],
+                            is_official=self.query_values['official'],
+                            deprecated=self.query_values['deprecated'])
+
+            print product_versions
+            for pv in product_versions:
+                print pv
+                self._importable_products.append(pv)
+
+        print self.importable_products
+        self._product_widget = EntityTreeWidget(self.importable_products)
+        self._product_widget.setFocusPolicy(QtCore.Qt.NoFocus)
 
     # -------------------------------------------------------------------------
     @property
-    def exportable_entities(self):
+    def importable_products(self):
         
-        if not hasattr(self, '_exportable_entities'):
+        if not hasattr(self, '_importable_products'):
             return []
 
-        return self._exportable_entities
-
-    # -------------------------------------------------------------------------
-    @property
-    def published_entities(self):
-        
-        if not hasattr(self, '_published_entities'):
-            return []
-
-        return self._published_entities
+        return self._importable_products
 
     # -------------------------------------------------------------------------
     @property
@@ -178,15 +193,24 @@ class EntityImportWizard(QtGui.QWizard):
 
         return self._query_values
 
+    # -------------------------------------------------------------------------
+    @property
+    def product_widget(self):
+
+        if not hasattr(self, '_product_widget'):
+            return EntityTreeWidget(self.importable_products)
+
+        return self._product_widget
+
     # -------------------------------------------------------------------------   
     def _set_query_values(self, key, value):
         self._query_values[key] = value
 
     # -------------------------------------------------------------------------
     @property
-    def entity_query_page(self):
-        if hasattr(self, '_entity_query_page'):
-            return self._entity_query_page
+    def product_query_page(self):
+        if hasattr(self, '_product_query_page'):
+            return self._product_query_page
 
         self._query_values = defaultdict(dict)
 
@@ -206,8 +230,9 @@ class EntityImportWizard(QtGui.QWizard):
         self._set_query_values('published', pubQ.isChecked())
         offQ = QtGui.QCheckBox('Official Versions')
         self._set_query_values('official', offQ.isChecked())
-        latQ = QtGui.QCheckBox('Latest Versions')
-        self._set_query_values('latest', latQ.isChecked())
+        depQ = QtGui.QCheckBox('Exclude Deprecated')
+        depQ.setChecked(True)
+        self._set_query_values('deprecated', not depQ.isChecked())
 
         nameQ.textChanged.connect(
             lambda q: self._set_query_values('name', nameQ.text()))
@@ -219,8 +244,8 @@ class EntityImportWizard(QtGui.QWizard):
             lambda q: self._set_query_values('published', pubQ.isChecked()))
         offQ.toggled.connect(
             lambda q: self._set_query_values('official', offQ.isChecked()))
-        latQ.toggled.connect(
-            lambda q: self._set_query_values('latest', latQ.isChecked()))
+        depQ.toggled.connect(
+            lambda q: self._set_query_values('deprecated', not depQ.isChecked()))
 
         queryForm = QtGui.QFormLayout()
         queryForm.addRow(self.tr("Category:  "), catQ)
@@ -231,7 +256,7 @@ class EntityImportWizard(QtGui.QWizard):
         optQuery = QtGui.QHBoxLayout()
         optQuery.addWidget(pubQ, 0, QtCore.Qt.AlignLeft)
         optQuery.addWidget(offQ, 1, QtCore.Qt.AlignCenter)
-        optQuery.addWidget(latQ, 0, QtCore.Qt.AlignRight)
+        optQuery.addWidget(depQ, 0, QtCore.Qt.AlignRight)
         optQuery.setSpacing(5)
 
         layout = QtGui.QVBoxLayout()
@@ -242,39 +267,32 @@ class EntityImportWizard(QtGui.QWizard):
 
         page.setLayout(layout)
 
-        self._entity_query_page = page
-        return self._entity_query_page
+        self._product_query_page = page
+        return self._product_query_page
 
     # -------------------------------------------------------------------------
     @property
-    def entity_selection_page(self):
+    def product_selection_page(self):
 
-        if hasattr(self, '_entity_selection_page'):
-            return self._entity_selection_page
+        if hasattr(self, '_product_selection_page'):
+            return self._product_selection_page
 
         page = QtGui.QWizardPage()
         page.setTitle("Selection")
         page.setSubTitle(
-            "Select the entities you'd like to export to products.")
+            "Select the products you'd like to import.")
 
-        self._entity_widget = EntityTreeWidget(self.exportable_entities)
-        self._entity_widget.setFocusPolicy(QtCore.Qt.NoFocus)
-
-        self._published_widget = EntityTreeWidget(self.published_entities)
-        self._published_widget.setFocusPolicy(QtCore.Qt.NoFocus)
-        self._published_widget.setFixedHeight(100)
+        self._product_widget = EntityTreeWidget(self.importable_products)
+        self._product_widget.setFocusPolicy(QtCore.Qt.NoFocus)
 
         layout = QtGui.QVBoxLayout()
-        layout.addWidget(QtGui.QLabel('Available for export :'))
-        layout.addWidget(self._entity_widget)
-        layout.addSpacing(5)
-        layout.addWidget(QtGui.QLabel('Already published at this version :'))
-        layout.addWidget(self._published_widget)
+        layout.addWidget(QtGui.QLabel('Available for import :'))
+        layout.addWidget(self.product_widget)
 
         page.setLayout(layout)
 
-        self._entity_selection_page = page
-        return self._entity_selection_page
+        self._product_selection_page = page
+        return self._product_selection_page
 
     # -------------------------------------------------------------------------
     @property
@@ -289,52 +307,17 @@ class EntityImportWizard(QtGui.QWizard):
     @property
     def import_options_page(self):
 
-        if hasattr(self, '_export_options_page'):
-            return self._export_options_page
+        if hasattr(self, '_import_options_page'):
+            return self._import_options_page
 
         page = QtGui.QWizardPage()
         page.setTitle("Options")
         page.setSubTitle(
-            "Set the options for the entities being exported.")
+            "Set the options for the products being imported.")
 
         self._options = defaultdict(dict)
 
         options_layout = QtGui.QVBoxLayout()
-
-        for entity_item in self.entity_widget.entity_items:
-            entity = entity_item.entity 
-
-            option_config = entity.option_config('export')
-
-            display_name = entity.display_name + "  (" + entity.category + ")"
-
-            option_widget = ActionOptionWidget(option_config, 
-                name=display_name)
-            option_header = option_widget.header
-
-            form_layout = QtGui.QFormLayout()
-            form_layout.addRow(option_header)
-
-            spacer = QtGui.QLabel()
-            spacer.setFixedWidth(10)
-
-            form_layout.addRow(option_widget)
-
-            options_layout.addLayout(form_layout)
-
-            h_rule = QtGui.QFrame()
-            h_rule.setLineWidth(0)
-            h_rule.setMidLineWidth(0)
-            h_rule.setFrameStyle(QtGui.QFrame.HLine | QtGui.QFrame.Plain)
-
-            options_layout.addWidget(h_rule)
-
-            self._options[entity]['widget'] = option_widget
-            self._options[entity]['header'] = option_header
-
-            option_widget.value_changed.connect(self._check_option_values)
-
-        options_layout.addStretch()
 
         options_widget = QtGui.QWidget()
         options_widget.setLayout(options_layout)
@@ -349,20 +332,15 @@ class EntityImportWizard(QtGui.QWizard):
 
         page.setLayout(layout)
 
-        self._export_options_page = page
-        return self._export_options_page
+        self._import_options_page = page
+        return self._import_options_page
 
     # -------------------------------------------------------------------------
     @property
     def import_confirm_page(self):
 
-        if hasattr(self, '_export_confirm_page'):
-            return self._export_confirm_page
-
-        self._descriptions = defaultdict(dict)
-
-        ptask_version = self.session.ptask_version
-        ptask = ptask_version.ptask
+        if hasattr(self, '_import_confirm_page'):
+            return self._import_confirm_page
 
         layout = QtGui.QVBoxLayout()
 
@@ -378,77 +356,13 @@ class EntityImportWizard(QtGui.QWizard):
         layout.addWidget(self._note_edit)
         layout.addSpacing(5)
 
-        products_layout = QtGui.QFormLayout()
+        self._import_confirm_page = QtGui.QWizardPage()
+        self._import_confirm_page.setTitle("Confirm")
+        self._import_confirm_page.setSubTitle(
+            "Describe and confirm the folowing imports :")
+        self._import_confirm_page.setLayout(layout)
 
-        # get this ptask's products
-        products = Product.list(ptask=ptask.spec)
-
-        for entity_item in self.entity_widget.entity_items:
-
-            entity = entity_item.entity
-
-            existing_products = [p for p in products 
-                if p.name == entity.display_name and 
-                   p.category == entity.category]
-
-            product_desc = QtGui.QLineEdit()
-            if existing_products:
-                product_desc.setText(existing_products[0].description)
-
-            product_lbl = QtGui.QLabel("<b>{n}</b>".format(n=entity.product_name))
-                
-            products_layout.addRow(product_lbl, product_desc)
-
-            self._descriptions[entity]['label'] = product_lbl
-            self._descriptions[entity]['widget'] = product_desc
-
-            product_desc.textChanged.connect(
-                lambda t: self._check_descriptions())
-
-        products_widget = QtGui.QWidget()
-        products_widget.setLayout(products_layout)
-
-        scroll_area = QtGui.QScrollArea()
-        scroll_area.setFocusPolicy(QtCore.Qt.NoFocus)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(products_widget)
-
-        product_lbl = QtGui.QLabel(
-            "Enter/update descriptions for the products:   (required)")
-        product_lbl.setWordWrap(True)
-
-        layout.addWidget(product_lbl)
-        layout.addWidget(scroll_area)
-        layout.addSpacing(5)
-
-        self._publish_check = QtGui.QCheckBox("Publish all after Export")
-        self._publish_check.setChecked(True)
-
-        self._version_check = QtGui.QCheckBox("Version up after Publish")
-        self._version_check.setChecked(True)
-        
-        # if publish gets toggled, update the version check accordingly
-        self._publish_check.toggled.connect(
-            lambda s: self._version_check.setEnabled(s) or 
-                      self._version_check.setChecked(s)
-        )
-
-        layout.addWidget(self._publish_check)
-        layout.addWidget(self._version_check)
-        layout.addSpacing(5)
-
-        confirm_lbl = QtGui.QLabel("<b>Export to {p} v{v}?</b>".\
-            format(p=ptask.spec, v=ptask_version.number))
-        confirm_lbl.setAlignment(QtCore.Qt.AlignCenter)
-        layout.addWidget(confirm_lbl)
-
-        self._export_confirm_page = QtGui.QWizardPage()
-        self._export_confirm_page.setTitle("Confirm")
-        self._export_confirm_page.setSubTitle(
-            "Describe and confirm the folowing exports :")
-        self._export_confirm_page.setLayout(layout)
-
-        return self._export_confirm_page
+        return self._import_confirm_page
 
     # -------------------------------------------------------------------------
     def _check_descriptions(self):
@@ -526,6 +440,6 @@ class EntityImportWizard(QtGui.QWizard):
         else:
             next_btn.setEnabled(False)
 
-        if self._entity_query_page == self.currentPage():
+        if self._product_query_page == self.currentPage():
             next_btn.setEnabled(True)
             
