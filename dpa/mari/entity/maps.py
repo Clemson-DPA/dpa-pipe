@@ -139,7 +139,7 @@ class MapsEntity(Entity):
             session.mari.history.undo()
             session.mari.utils.message("Error with tif texture export.")
 
-        # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     @classmethod
     def convert_to_tex(cls, session, export_path):
         tif_dir = export_path.replace('/tex/', '/tif/')

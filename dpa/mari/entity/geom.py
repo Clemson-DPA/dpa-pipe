@@ -6,69 +6,100 @@ from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
 from dpa.app.entity import Entity, EntityRegistry, EntityError
 
+from dpa.config import Config
+from PySide import QtGui, QtCore
+
 # -----------------------------------------------------------------------------
 class GeomEntity(Entity):
 
     category = "geom"
+    exportable = False
+
+    # -------------------------------------------------------------------------
+    # I'm hacking this until we get a proper subscribe and import dialogue
+    @classmethod
+    def import_product(cls, file_path, session):
+        pass
 
     # -------------------------------------------------------------------------
     @classmethod
-    def get(cls, name, session, instance=None):
-        """Retrieve an entity instance from the supplied session."""
+    def get_products(cls, session, app, category):
+        sublist = defaultdict(dict)
 
-        # make sure the name exists. 
-        set_names = cls.get_export_sets(session)
+        # for now, get only products available from subs with same category
+        for sub in session.ptask_version.subscriptions:
+            product_ver = sub.product_version
+            product = product_ver.product
 
-        fullname = name
-        if instance:
-            fullname += "_" + str(instance)
+            if product.category == category:
+                import_path = os.path.join(session.ptask_area.path,
+                    'import', app, product.name, product.category)
 
-        if not set_names:
-            matches = [s for s in set_names if s.endswith(fullname)]
+                if not os.path.exists(import_path):
+                    raise EntityError("Import directory does not exist: " +
+                        import_path + ". Please make sure the subscription "
+                        " is correct.")
 
-        if not matches and len(matches) != 1:
-            raise EntityError(
-                "Could not find unique {cat} {name} instance in session.".\
-                    format(cat=cls.category, name=fullname)
-            )
+                sublist[product.name] = import_path
 
-        return cls(name, session, instance)
-
-    # -------------------------------------------------------------------------
-    @classmethod
-    def list(cls, session):
-        """Retrieve all entities of this type from available products"""
-
-        entities = []
-
-        set_names = cls.get_export_sets(session)
-
-        if not set_names: 
-            for set_name in set_names:
-
-                name_parts = cls.set_regex().match(set_name)
-                if not name_parts:
-                    continue
-
-                (name, instance) = name_parts.groups()
-
-                if not instance:
-                    instance=None
-            
-                entities.append(cls(name, session, instance))
-
-        return entities
+        return sublist
 
     # -------------------------------------------------------------------------
-    @classmethod
-    def get_export_sets(cls, session):
-        return []
+    def create_ui(self):
+        # get available products and configuration
+        self._get_products()
+        self.read_cfg('channels')
+
+
+
+
     # -------------------------------------------------------------------------
-    def get_export_objects(self):
-        return []
-    # -----------------------------------------------------------------------------
-    def _get_import_set(self):
-        return []
+    def create_project(self):
+        # very mari specific
+        pass
+
+        
+
+    # -------------------------------------------------------------------------
+    def read_cfg(self, action):
+        app_name = self.session_app_name
+
+        self._opts = defaultdict(dict)
+        
+        rel_cfg = os.path.join('config', app_name, self.category, action)
+        rel_cfg += '.cfg'
+
+        ptask_area = self.session.ptask_area
+        action_cfg = ptask_area.config(rel_cfg, composite_ancestors=True)
+
+        if not action_acfg or not hasattr(action_cfg, 'channels'):
+            raise ActionError(
+                "Cannot create mari project without set config.")
+
+        for (ch, options) in action_cfg.channels.iteritems():
+            self._opts[ch] = options
+
+    #  -------------------------------------------------------------------------
+    @property
+    def opts(self):
+        if not hasattr(self, '_opts'):
+            return defaultdict(dict)
+
+        return self._opts
+
+    #  -------------------------------------------------------------------------
+    @property
+    def sublist(self):
+        if not hasattr(self, '_sublist'):
+            return defaultdict(dict)
+
+        return self._sublist
+
+    # -------------------------------------------------------------------------
+    def _get_products(self, app):
+        self._sublist = self.__class__.get_products(self.session, app, 
+            self.category)
+        return self._sublist
 
 # -----------------------------------------------------------------------------
 EntityRegistry().register('mari', GeomEntity)
