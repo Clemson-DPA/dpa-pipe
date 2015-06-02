@@ -124,6 +124,7 @@ class ActionOption(object):
             icon_path=self.icon_path,
         )
         self._required = config.get('required', False)
+        self._disabled = config.get('disabled', False)
 
     # -----------------------------------------------------------------------------
     @property
@@ -168,6 +169,11 @@ class ActionOption(object):
     def required(self):
         return self._required
 
+    # -----------------------------------------------------------------------------
+    @property
+    def disabled(self):
+        return self._disabled
+    
     # -----------------------------------------------------------------------------
     @property
     def tooltip(self):
@@ -229,6 +235,7 @@ class ActionOptionBool(ActionOption, QtGui.QCheckBox):
         QtGui.QCheckBox.__init__(self, parent=parent)
 
         self.setChecked(bool(self.default))
+        self.setDisabled(bool(self.disabled))
         self.setToolTip(self.tooltip)
 
         self.stateChanged.connect(lambda s: self.value_changed.emit())
