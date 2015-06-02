@@ -123,6 +123,18 @@ class ProductVersion(CreateMixin, GetMixin, ListMixin, UpdateMixin,
         return super(ProductVersion, self).update(self.spec, data)
 
     # -------------------------------------------------------------------------
+    def has_representation(self, rep_type, resolution='none'):
+        from dpa.product.representation import ProductRepresentation
+        
+        prod_rep = ProductRepresentation.list(product_version=self.spec,
+            representation_type=rep_type, resolution=resolution)
+
+        if len(prod_rep) == 1:
+            return True
+        else:
+            return False
+
+    # -------------------------------------------------------------------------
     @property
     def creator(self):
         return User.get(self.creator_username)
