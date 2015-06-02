@@ -1,3 +1,4 @@
+cinesync==1.0
 colorama==0.2.7
 ordereddict==1.1
 parsedatetime==1.4
