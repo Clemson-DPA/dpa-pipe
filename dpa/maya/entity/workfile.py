@@ -12,25 +12,37 @@ class WorkfileEntity(SetBasedEntity):
 
     # -------------------------------------------------------------------------
     @staticmethod
-    def _get_file_base_name(session, file_path=None):
+    def _name_from_context(session):
 
-        if not file_path:
+        ptask = session.ptask
+        type_lookup = ptask.types
+
+        # hardcoding knowledge of the pipeline hierarchy here which is, in
+        # general, a bad idea. However, it makes things much cleaner/easier to
+        # read as far as the output products, so we'll go with it for now.
+        if 'build' in type_lookup and 'stage' in type_lookup:
+            base_name = type_lookup['build'] + "_" + type_lookup['stage']
+        elif 'shot' in type_lookup and 'stage' in type_lookup:
+            base_name = type_lookup['shot'] + "_" + type_lookup['stage']
+
+        # fall back to the file name
+        else:
             file_path = session.cmds.file(q=True, sceneName=True)
+            (base_name, file_ext) = os.path.splitext(
+                os.path.split(file_path)[-1])
 
-        (file_base, file_ext) = os.path.splitext(os.path.split(file_path)[-1])
-
-        return file_base
+        return base_name
 
     # -------------------------------------------------------------------------
     @classmethod
     def get(cls, name, session, instance=None):
         """Retrieve an entity instance from the supplied session."""
     
-        file_base = cls._get_file_base_name(session)
+        base_name = cls._name_from_context(session)
 
         # name has to match the base name of the file for the default
         # 'workfile' entity
-        if name == file_base and not instance:
+        if name == base_name and not instance:
             return cls(name, session)
 
         # doesn't match. look for a matching export group
@@ -44,8 +56,8 @@ class WorkfileEntity(SetBasedEntity):
         entities = super(WorkfileEntity, cls).list(session)
 
         # get the default workfile entity
-        file_base = cls._get_file_base_name(session)
-        entities.append(cls.get(file_base, session))
+        base_name = cls._name_from_context(session)
+        entities.append(cls.get(base_name, session))
 
         return entities
 
@@ -63,7 +75,7 @@ class WorkfileEntity(SetBasedEntity):
         product_repr_file = os.path.join(
             product_repr_dir, self.display_name + "." + file_type)
 
-        if self.display_name == self.__class__._get_file_base_name(self.session):
+        if self.display_name == self.__class__._name_from_context(self.session):
             self.session.cmds.file(
                 product_repr_file, 
                 type='mayaAscii', 

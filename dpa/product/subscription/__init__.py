@@ -4,9 +4,12 @@
 # Imports:
 # -----------------------------------------------------------------------------
 
+import os.path
+
 from dpa.ptask.version import PTaskVersion
 from dpa.product.version import ProductVersion
 from dpa.ptask.spec import PTaskSpec
+from dpa.ptask.area import PTaskArea
 from dpa.restful import RestfulObject, RestfulObjectError
 from dpa.restful.mixins import (
     CreateMixin, GetMixin, ListMixin, UpdateMixin, DeleteMixin,
@@ -108,6 +111,19 @@ class ProductSubscription(CreateMixin, GetMixin, ListMixin, UpdateMixin,
     def unlock(self):
         return super(ProductSubscription, self).update(
             self.spec, {"locked": False})
+
+    # -------------------------------------------------------------------------
+    def import_path(self, app='global'):
+        product = self.product_version.product
+        area = PTaskArea(self.ptask_version.ptask.spec)
+        import_dir = area.dir(dir_name="import", verify=False, path=True)
+
+        path = os.path.join(import_dir, app, product.name, product.category)
+        
+        if not os.path.exists(path):
+            raise ProductSubscriptionError("Import path does not exist.")
+
+        return path
 
     # -------------------------------------------------------------------------
     # Properties
