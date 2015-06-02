@@ -52,7 +52,6 @@ class GeomEntity(Entity):
 
 
 
-
     # -------------------------------------------------------------------------
     def create_project(self):
         # very mari specific
