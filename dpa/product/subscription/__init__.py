@@ -4,6 +4,8 @@
 # Imports:
 # -----------------------------------------------------------------------------
 
+import os.path
+
 from dpa.ptask.version import PTaskVersion
 from dpa.product.version import ProductVersion
 from dpa.ptask.spec import PTaskSpec
@@ -12,7 +14,6 @@ from dpa.restful import RestfulObject, RestfulObjectError
 from dpa.restful.mixins import (
     CreateMixin, GetMixin, ListMixin, UpdateMixin, DeleteMixin,
 )
-import os.path
 
 # -----------------------------------------------------------------------------
 # Public Classes:
