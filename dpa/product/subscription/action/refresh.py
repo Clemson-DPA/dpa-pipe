@@ -37,12 +37,32 @@ class SubscriptionRefreshAction(Action):
     # -------------------------------------------------------------------------
     def execute(self):
 
+        processed = dict()
+        conflicts = []
+
         print ""
 
         import_dir = self._prep_import_dir()
 
         for sub in self.ptask_version.subscriptions:
+            product_version = sub.product_version
+            product = product_version.product
+            name_spec = product.name_spec
+            if name_spec in processed:
+                conflicts.append(product_version)
+                continue
+
             self._link_sub(sub, app='global')
+            processed[name_spec] = sub
+
+        print ""
+
+        if conflicts:
+            self.logger.warning(
+                "Uh oh! You have conflicting subscriptions!\n" + \
+                "  The following subscriptions have been ignored: \n\n    " + \
+                "\n    ".join([p.spec for p in conflicts])
+            )
 
         print ""
             
@@ -81,7 +101,7 @@ class SubscriptionRefreshAction(Action):
             self._ptask = ptask
 
         self._ptask_version = self.ptask.latest_version
-                    
+
     # -------------------------------------------------------------------------
     def verify(self):
 
@@ -132,7 +152,14 @@ class SubscriptionRefreshAction(Action):
         area = PTaskArea(self.ptask.spec)
 
         product_ver = sub.product_version
-        product_ver_area = PTaskArea(product_ver.spec)
+
+        try:
+            product_ver_area = PTaskArea(product_ver.spec)
+        except PTaskAreaError as e:
+            raise ActionError(
+                "Unable to locate product directory for: " + product_ver.spec
+            )
+
         product_ver_path = product_ver_area.path
 
         product = product_ver.product
@@ -153,3 +180,4 @@ class SubscriptionRefreshAction(Action):
 
         os.symlink(product_ver_path, link_name)
 
+        product_ver_area = PTaskArea(product_ver.spec)

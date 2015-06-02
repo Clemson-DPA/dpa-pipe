@@ -77,9 +77,22 @@ class SubscriptionCreateAction(Action):
         self._product_version = version
         self._ptask_version = ptask_version
         self._no_refresh = no_refresh
+        self._existing_sub = None
 
     # -------------------------------------------------------------------------
     def execute(self):
+
+        if self._existing_sub:
+            try:
+                ProductSubscription.delete(
+                    self.existing_sub.ptask_version_spec,
+                    self.existing_sub.product_version_spec,
+                )
+            except ProductSubscriptionError as e:
+                raise ActionError("Subscription removal failed: " + str(e))
+            else:
+                if self.interactive:
+                    print "\nExisting subscription removed.\n"
 
         try:
             sub = ProductSubscription.create(
@@ -90,7 +103,7 @@ class SubscriptionCreateAction(Action):
             raise ActionError("Subscription failed: " + str(e))
         else:
             if self.interactive:
-                print "\nSubscription created.\n"
+                print "New subscription created."
 
         if self._no_refresh:
             return
@@ -199,10 +212,11 @@ class SubscriptionCreateAction(Action):
 
         # see if there is an existing subscription:
         self._existing_sub = self._ptask_version.is_subscribed(self._product)
-        if (self._existing_sub and 
-           (self._existing_sub.product_version_spec == \
-            self._product_version.spec)):
-            raise ActionError("Subscription already exists!")
+        if self._existing_sub:
+            
+            if (self._existing_sub.product_version_spec == \
+                self._product_version.spec):
+                raise ActionError("Subscription already exists!")
 
         if self._product_version.deprecated:
             raise ActionError(
@@ -245,6 +259,11 @@ class SubscriptionCreateAction(Action):
         )
 
         output.dump()
+
+        if self._existing_sub:
+            print "Will unsubscribe from existing sub:\n    " + \
+                Style.bright + self._existing_sub.product_version.spec + \
+                Style.normal + "\n"
 
         if not Output.prompt_yes_no("Subscribe"):        
             raise ActionAborted("User chose not to proceed.") 
