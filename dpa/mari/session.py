@@ -81,7 +81,7 @@ class MariSession(RemoteMixin, Session):
             if archive:
                 project.save(force_save=True)
                 project.close(confirm_if_modified=False)
-                
+
                 if file_path:
                     if os.path.exists(file_path) and not overwrite:
                         raise SessionError(
@@ -93,6 +93,9 @@ class MariSession(RemoteMixin, Session):
                         self.ptask.name) + '.mra'
 
                 self.mari.projects.archive(uuid,file_path)
+
+                if not file_path:
+                    self.ptask_area.set_permissions(0660)
             else:
                 project.save(force_save=True)
         else:
