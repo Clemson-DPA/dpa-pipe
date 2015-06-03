@@ -170,6 +170,11 @@ class Entity(object):
 
     # -------------------------------------------------------------------------
     @property
+    def importable(self):
+        return True
+
+    # -------------------------------------------------------------------------
+    @property
     def instance(self):
         return self._instance
 

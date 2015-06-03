@@ -74,6 +74,15 @@ def _import_mari_plugins():
 # get the python path setup
 _populate_sys_path()
 
+# register MariSession with SessionFactory
+print "Loading MariSession"
+import dpa.mari.session
+
+# register Mari Entityies
+print "Loading Mari Entities"
+import dpa.mari.entity.maps
+import dpa.mari.entity.geom
+
 # do the loading
 print "Loading DPA mari plugins..."
 _import_mari_plugins()
