@@ -75,19 +75,24 @@ class MariSession(RemoteMixin, Session):
         # check to see if there's a project open?
         # otherwise don't do anything else...?
         project = self.mari.projects.current()
+        uuid = project.uuid()
         
         if project: 
             if archive:
+                project.save(force_save=True)
+                project.close(confirm_if_modified=False)
+                
                 if file_path:
                     if os.path.exists(file_path) and not overwrite:
                         raise SessionError(
                             "Cannot save '{f}'. File exists.".format(f=file_path))
-                
-                    project.save(force_save=True)
-                    project.close(confirm_if_modified=False)
-                    self.mari.projects.archive(project.uuid(),file_path)
                 else:
-                    raise SessionError("Cannot archive without a filepath.")
+                    # find...a file path...I guess? this need re-eval! thanks!
+                    ptask_dir = self.ptask_area.dir()
+                    file_path = os.path.join(ptask_dir, self.app_name,
+                        self.ptask.name) + '.mra'
+
+                self.mari.projects.archive(uuid,file_path)
             else:
                 project.save(force_save=True)
         else:
