@@ -74,7 +74,7 @@ class ProductSubscription(CreateMixin, GetMixin, ListMixin, UpdateMixin,
             product_version_spec = PTaskSpec.get(
                 product_version_spec, relative_to=relative_to)
 
-        spec = ",".join([product_version_spec, ptask_version_spec])
+        spec = ",".join([ptask_version_spec, product_version_spec])
 
         return super(ProductSubscription, cls).get(spec)
 

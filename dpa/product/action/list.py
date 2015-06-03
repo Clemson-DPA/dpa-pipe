@@ -25,11 +25,18 @@ class ProductListAction(Action):
             help="List products matching this wildcard spec. (wildcard is %%)",
         )
 
+        parser.add_argument(
+            "-o", "--official",
+            action="store_true",
+            help="List only products with an official version.",
+        )
+
     # -------------------------------------------------------------------------
-    def __init__(self, wild_spec):
-        super(ProductListAction, self).__init__(wild_spec)
+    def __init__(self, wild_spec, official=False):
+        super(ProductListAction, self).__init__(wild_spec, official=False)
 
         self._wild_spec = wild_spec
+        self._official_only = official
 
     # -------------------------------------------------------------------------
     def execute(self):
@@ -70,6 +77,9 @@ class ProductListAction(Action):
                 s=self.wild_spec, n=len(products))
 
         for product in sorted(products, key=lambda p: p.name + p.category + p.ptask_spec):
+            if self._official_only and not product.official_version_number:
+                continue
+
             output.add_item(
                 {
                     name: product.name,
