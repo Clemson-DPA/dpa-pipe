@@ -1,0 +1,15 @@
+#!/opt/foundry/mari2/mari
+
+import sys
+
+from dpa.app.cli import ClApp
+
+# ------------------------------------------------------------------------------
+class ClMari(ClApp):
+    
+    name = 'clmari'
+
+# ------------------------------------------------------------------------------
+if __name__ == "__main__":
+    sys.exit(ClMari.cli())
+

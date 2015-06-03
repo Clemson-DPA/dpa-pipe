@@ -5,7 +5,7 @@
 
 import os
 import shlex
-from subprocess import check_output, CalledProcessError, Popen, PIPE
+from subprocess import CalledProcessError, Popen, PIPE
 
 from dpa.action import Action, ActionError
 
@@ -102,7 +102,8 @@ class SyncAction(Action):
 
         if self.wait:
             try:
-                msg = check_output(args)
+                msg = Popen(args,
+                    stdout=PIPE)
                 self.logger.info(msg)
             except CalledProcessError as e:
                 raise ActionError(str(e))
