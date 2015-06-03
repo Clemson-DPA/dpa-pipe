@@ -149,6 +149,13 @@ class PTaskSpec(str):
             base_spec_str = spec_str
             product_spec_str = ""
 
+        # allow people to avoid typing 4 digit padded version numbers in specs
+        product_parts = product_spec_str.split(cls.SEPARATOR)
+        if len(product_parts) > 3:
+            product_parts[3] = product_parts[3].zfill(4)
+            product_spec_str = cls.SEPARATOR.join(product_parts)
+            spec_str = cls.SEPARATOR.join([base_spec_str, product_spec_str])
+
         instance = str.__new__(cls, spec_str)
         instance._base_spec = base_spec_str
         instance._product_spec = product_spec_str
