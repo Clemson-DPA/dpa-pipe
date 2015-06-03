@@ -74,7 +74,7 @@ class GeomEntity(Entity):
             self.session.ptask.name) + '.mra'
 
         self.session.mari.projects.archive(uuid,mari_proj)
-
+        self.session.ptask_area.set_permissions(0660)
         self.session.mari.projects.open(uuid)
 
     # -------------------------------------------------------------------------
