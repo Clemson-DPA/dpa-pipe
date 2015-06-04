@@ -1,6 +1,6 @@
 import re
 import os.path
-import os.chmod
+import os
 
 from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
