@@ -39,10 +39,6 @@ class EntityExportWizard(QtGui.QWizard):
         options_id = self.addPage(self.export_options_page)
         confirm_id = self.addPage(self.export_confirm_page)
 
-        if len(self.exportable_entities) == 1:
-            self.entity_widget.select_all_entities()
-            self.setStartId(options_id)
-
         self.setOption(QtGui.QWizard.CancelButtonOnLeft, on=True)
 
         self.entity_widget.itemSelectionChanged.connect(self._toggle_options)

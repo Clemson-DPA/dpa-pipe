@@ -44,7 +44,7 @@ class Entity(object):
         """Get a config option for this entity class for the given action."""
 
         app_name = session.app_name
-        id_str = app_name + action + str(file_type)
+        id_str = app_name + action + cls.category + str(file_type)
 
         if id_str in cls._option_configs:
             return cls._option_configs[id_str]
@@ -102,12 +102,14 @@ class Entity(object):
 
     # -------------------------------------------------------------------------
     @classmethod
-    def import_file(cls, file_path, session, *args, **kwargs):
+    def import_product_representation(cls, session, representation, *args,
+        **kwargs):
         """Import a file into the session.
         
         Returns the newly imported file as an entity.
         """
-        pass
+        raise EntityError("Import not supported for {app} {cat}".format(
+            app=session.app_name, cat=cls.category))
 
     # -------------------------------------------------------------------------
     @classmethod
