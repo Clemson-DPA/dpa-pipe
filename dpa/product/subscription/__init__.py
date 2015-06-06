@@ -61,7 +61,7 @@ class ProductSubscription(CreateMixin, GetMixin, ListMixin, UpdateMixin,
 
     # -------------------------------------------------------------------------
     @classmethod
-    def get(cls, product_version_spec, ptask_version_spec, relative_to=None):
+    def get(cls, ptask_version_spec, product_version_spec, relative_to=None):
 
         # XXX PTaskSpec >> ContextSpec
         # XXX PTaskArea >> ContextArea
