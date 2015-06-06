@@ -237,7 +237,8 @@ class EntityExportWizard(QtGui.QWizard):
         for entity_item in self.entity_widget.entity_items:
             entity = entity_item.entity 
 
-            option_config = entity.option_config('export')
+            option_config = entity.__class__.option_config(
+                self.session, 'export')
 
             display_name = entity.display_name + "  (" + entity.category + ")"
 
