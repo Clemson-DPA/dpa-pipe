@@ -163,7 +163,7 @@ class SubscriptionUpdateAction(Action):
             for sub in self._subs:
 
                 if isinstance(sub, ProductSubscription):
-                    subs_to_udpate.append(sub)
+                    subs.append(sub)
                     continue
 
                 try:
