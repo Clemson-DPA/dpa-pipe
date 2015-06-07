@@ -36,6 +36,64 @@ class Entity(object):
 
     category = None
 
+    _option_configs = {}
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def option_config(cls, session, action, file_type=None):
+        """Get a config option for this entity class for the given action."""
+
+        app_name = session.app_name
+        id_str = app_name + action + cls.category + str(file_type)
+
+        if id_str in cls._option_configs:
+            return cls._option_configs[id_str]
+
+        ptask_type_lookup = session.ptask.types
+
+        rel_config = os.path.join('config', app_name, cls.category, action)
+        if file_type:
+            rel_config += "_" + file_type
+        rel_config += '.cfg'
+
+        ptask_area = session.ptask_area
+        action_config = ptask_area.config(rel_config, composite_ancestors=True)
+
+        configs_to_composite = []
+
+        for (section_name, section_config) in action_config.iteritems():
+
+            if section_name == "global":
+                configs_to_composite.append(
+                    section_config.get('options', Config()))
+            else:
+                match = True
+                for (filter_name, val) in section_config.iteritems():
+                    if filter_name == 'options':
+                        continue
+                    
+                    if not filter_name in ptask_type_lookup:
+                        match = False
+                        break
+
+                    if not ptask_type_lookup[filter_name] == val:
+                        match = False
+                        break
+
+                if match:
+                    configs_to_composite.append(
+                        section_config.get('options', Config())
+                    )
+
+        composited = Config.composite(configs_to_composite)
+
+        config = Config()
+        config.add('options', composited)
+
+        cls._option_configs[id_str] = config
+
+        return config
+
     # -------------------------------------------------------------------------
     @classmethod
     def get(cls, name, session, instance=None):
@@ -44,12 +102,14 @@ class Entity(object):
 
     # -------------------------------------------------------------------------
     @classmethod
-    def import_file(cls, file_path, session, *args, **kwargs):
+    def import_product_representation(cls, session, representation, *args,
+        **kwargs):
         """Import a file into the session.
         
         Returns the newly imported file as an entity.
         """
-        pass
+        raise EntityError("Import not supported for {app} {cat}".format(
+            app=session.app_name, cat=cls.category))
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -95,55 +155,6 @@ class Entity(object):
             raise EntityError("Unable to export entity: " + str(e))
 
         return create_action.product_repr
-
-    # -------------------------------------------------------------------------
-    def option_config(self, action):
-        """Get a config option for this entity for the given action."""
-
-        if hasattr(self, '_option_config'):
-            return self._option_config
-
-        app_name = self.session.app_name
-        type_lookup = self.session.ptask.types
-
-        rel_config = os.path.join('config', app_name, self.category, action)
-        rel_config += '.cfg'
-
-        ptask_area = self.session.ptask_area
-        action_config = ptask_area.config(rel_config, composite_ancestors=True)
-
-        configs_to_composite = []
-
-        for (section_name, section_config) in action_config.iteritems():
-
-            if section_name == "global":
-                configs_to_composite.append(
-                    section_config.get('options', Config()))
-            else:
-                match = True
-                for (filter_name, val) in section_config.iteritems():
-                    if filter_name == 'options':
-                        continue
-                    
-                    if not filter_name in type_lookup:
-                        match = False
-                        break
-
-                    if not type_lookup[filter_name] == val:
-                        match = False
-                        break
-
-                if match:
-                    configs_to_composite.append(
-                        section_config.get('options', Config())
-                    )
-
-        composited = Config.composite(configs_to_composite)
-
-        self._option_config = Config()
-        self._option_config.add('options', composited)
-
-        return self._option_config
 
     # -------------------------------------------------------------------------
     @property
