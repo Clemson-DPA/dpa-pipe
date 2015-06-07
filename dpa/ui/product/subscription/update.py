@@ -13,8 +13,8 @@ from dpa.app.session import SessionRegistry
         
 # -----------------------------------------------------------------------------
 
-VERSION_ICON_URI = "icon:///images/icons/import_32x32.png"
-VERSION_OPTIONS_CONFIG = "config/product/subscription/update.cfg"
+UPDATE_ICON_URI = "icon:///images/icons/import_32x32.png"
+UPDATE_OPTIONS_CONFIG = "config/product/subscription/update.cfg"
 
 # -----------------------------------------------------------------------------
 class ProductSubscriptionUpdateDialog(SessionActionDialog):
@@ -23,7 +23,7 @@ class ProductSubscriptionUpdateDialog(SessionActionDialog):
     def __init__(self):
 
         self._ptask_area = PTaskArea.current()
-        options_config = self._ptask_area.config(VERSION_OPTIONS_CONFIG,
+        options_config = self._ptask_area.config(UPDATE_OPTIONS_CONFIG,
             composite_ancestors=True)
 
         self.check_subscriptions()
@@ -48,7 +48,7 @@ class ProductSubscriptionUpdateDialog(SessionActionDialog):
             error_dialog.showMessage("Unable to update subscriptions.")
             return
 
-        icon_path = IconFactory().disk_path(VERSION_ICON_URI)
+        icon_path = IconFactory().disk_path(UPDATE_ICON_URI)
 
         super(ProductSubscriptionUpdateDialog, self).__init__(
             title='Update Existing Subscriptions',
@@ -74,9 +74,9 @@ class ProductSubscriptionUpdateDialog(SessionActionDialog):
 
         try:
             if len(self.updatelist) > 0:
-                version_action_cls = ActionRegistry().get_action('update', 'subs')
-                version_action = version_action_cls(self._ptask, self.updatelist['subs'][0])
-                version_action()
+                update_action_cls = ActionRegistry().get_action('update', 'subs')
+                update_action_cls = update_action_cls(self._ptask, self.updatelist['subs'][0])
+                update_action_cls()
         except ActionError as e:
             error_dialog = QtGui.QErrorMessage(self.parent())
             error_dialog.setWindowTitle('Update Subscription Failure')
@@ -84,8 +84,8 @@ class ProductSubscriptionUpdateDialog(SessionActionDialog):
                 "There was an error updating the subscriptions."
             )
         else:
-            QtGui.QMessageBox.question(self, "Updating Subscriptions Successful",
-                "Updating subscriptions was successful.",
+            QtGui.QMessageBox.question(self, "Updating Subscriptions Results",
+                "Please verify results in the console.",
                 buttons=QtGui.QMessageBox.Cancel | QtGui.QMessageBox.Ok,
                 defaultButton=QtGui.QMessageBox.NoButton,
             )
