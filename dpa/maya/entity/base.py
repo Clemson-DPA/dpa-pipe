@@ -16,9 +16,27 @@ class SetBasedEntity(Entity):
     def set_regex(cls):
 
         return re.compile(
-            "^export_{cat}_([^_]+)_?(\d+)?$".format(cat=cls.category),
+            "^export_{cat}_([\w]+)_?(\d+)?$".format(cat=cls.category),
             re.IGNORECASE
         )
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def get_set_name(cls, name, inst=None):
+
+        if inst is not None:
+            set_name = "export_{cat}_{name}_{inst}".format(
+                cat=cls.category,
+                name=name,
+                inst=inst,
+            )
+        else:
+            set_name = "export_{cat}_{name}".format(
+                cat=cls.category,
+                name=name,
+            )
+
+        return set_name
 
     # -------------------------------------------------------------------------
     @classmethod
