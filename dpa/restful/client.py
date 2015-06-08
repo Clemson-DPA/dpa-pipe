@@ -59,6 +59,11 @@ class RestfulClient(object):
         (http_method, url) = cls._get_url(action, data_type,
             primary_key=primary_key)
 
+        return cls.execute_request_url(http_method, url, data, params, headers)
+
+    @classmethod
+    def execute_request_url(cls, http_method, url, data=None, params=None, headers=None):
+
         data_format = cls.data_format
 
         if params:
@@ -84,6 +89,7 @@ class RestfulClient(object):
             raise RestfulClientError(
                 "Unknown method for requests: " + str(requests_method_name))
 
+        print url
         # execute the request
         response = requests_method(url, params=params, data=data,
             headers=headers)
