@@ -76,7 +76,7 @@ class SubscriptionImportWizard(QtGui.QWizard):
             option_widget = self._options[representation]['widget']
 
             try:
-                entity = entity_class.import_product_representation(
+                entities = entity_class.import_product_representation(
                     self.session,
                     representation,
                     **option_widget.value
