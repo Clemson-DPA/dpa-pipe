@@ -24,7 +24,7 @@ class CreateMixin(object):
     def create(cls, data):
 
         try:
-            data = RestfulClient.execute_request(
+            data = RestfulClient().execute_request(
                 'create', cls.data_type, data=data)
         except RestfulClientError as e:
             raise cls.exception_class(e)
@@ -49,7 +49,7 @@ class DeleteMixin(object):
         # remove by primary_key and id
 
         try:
-            return RestfulClient.execute_request('delete', cls.data_type,
+            return RestfulClient().execute_request('delete', cls.data_type,
                 primary_key=primary_key)
         except RestfulClientError as e:
             raise cls.exception_class(e)
@@ -71,7 +71,7 @@ class GetMixin(object):
         # cache by primary_key and id
 
         try:
-            data = RestfulClient.execute_request('get', cls.data_type, 
+            data = RestfulClient().execute_request('get', cls.data_type, 
                 primary_key=primary_key, params=filters)
         except RestfulClientError as e:
             raise cls.exception_class(e)
@@ -89,7 +89,7 @@ class ListMixin(object):
     def list(cls, **filters):
 
         try:
-            data_list = RestfulClient.execute_request('list', cls.data_type,
+            data_list = RestfulClient().execute_request('list', cls.data_type,
                 params=filters)
         except RestfulClientError as e:
             raise cls.exception_class(e)
@@ -124,7 +124,7 @@ class UpdateMixin(object):
         cls = self.__class__
 
         try:
-            db_data = RestfulClient.execute_request('update', cls.data_type,
+            db_data = RestfulClient().execute_request('update', cls.data_type,
                 primary_key=primary_key, data=update_data)
         except RestfulClientError as e:
             raise cls.exception_class(e)
