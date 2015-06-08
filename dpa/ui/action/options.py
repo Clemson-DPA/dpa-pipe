@@ -275,7 +275,7 @@ class ActionOptionFloat(ActionOptionNumeric, QtGui.QDoubleSpinBox):
     # -------------------------------------------------------------------------
     @property
     def value(self):
-        return super(ActionOptionFloat, self).value
+        return QtGui.QDoubleSpinBox.value(self)
 
 # -----------------------------------------------------------------------------
 class ActionOptionInt(ActionOptionNumeric, QtGui.QSpinBox):
@@ -302,7 +302,7 @@ class ActionOptionInt(ActionOptionNumeric, QtGui.QSpinBox):
     # -------------------------------------------------------------------------
     @property
     def value(self):
-        return super(ActionOptionInt, self).value
+        return QtGui.QSpinBox.value(self)
 
 # -----------------------------------------------------------------------------
 class ActionOptionList(ActionOption, QtGui.QListWidget):

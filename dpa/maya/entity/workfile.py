@@ -105,7 +105,7 @@ class WorkfileEntity(SetBasedEntity):
 
         entities_to_create = []        
 
-        if instances:
+        if instances == 1 and instance_start == 0:
             session.cmds.file(
                 repr_path,
                 reference=True,
