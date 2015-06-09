@@ -1,5 +1,6 @@
 import re
 import os.path
+import os
 
 from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
@@ -74,7 +75,7 @@ class GeomEntity(Entity):
             self.session.ptask.name) + '.mra'
 
         self.session.mari.projects.archive(uuid,mari_proj)
-        self.session.ptask_area.set_permissions(0660)
+        os.chmod(file_path, 0770)
         self.session.mari.projects.open(uuid)
 
     # -------------------------------------------------------------------------
