@@ -5,6 +5,7 @@ import re
 from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
 from dpa.app.entity import Entity, EntityRegistry, EntityError
+from dpa.ptask.area import PTaskArea, PTaskAreaError
 
 # -----------------------------------------------------------------------------
 class SetBasedEntity(Entity):
@@ -37,6 +38,38 @@ class SetBasedEntity(Entity):
             )
 
         return set_name
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def get_import_file(cls, session, name, category, representation):
+    
+        session_file_path = session.cmds.file(q=True, sceneName=True)
+
+        ptask_area = PTaskArea.current()
+        try:
+            import_dir = ptask_area.dir(dir_name='import', path=True)
+        except PTaskAreaError:
+            raise EntityError("Could not find import directory!")
+
+        import_dir = os.path.join(
+            import_dir, 'global', name, category, representation.type, 
+            representation.resolution
+        )
+
+        # get the file in the import_dir
+        import_files = os.listdir(import_dir)
+        type_files = [f for f in import_files 
+            if f.endswith('.' + representation.type)]
+        if len(type_files) != 1:
+            raise EntityError(
+                "Could not identify .{typ} file for import.".format(
+                    typ=representation.type))
+
+        import_path = os.path.join(import_dir, type_files[0])
+        rel_import_file = os.path.relpath(import_path, 
+            os.path.dirname(session_file_path))
+
+        return rel_import_file
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -114,4 +147,66 @@ class SetBasedEntity(Entity):
             raise EntityError("Unable to identify export set for entity!")
 
         return matches[0]
+
+# -----------------------------------------------------------------------------
+class SetBasedWorkfileEntity(SetBasedEntity):
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def import_product_representation(cls, session, representation, *args,
+        **kwargs):
+
+        product = representation.product_version.product
+
+        if representation.type != "ma":
+            raise EntityError(
+                "Don't know how to import {cat} of type {typ}".format(
+                    cat=cls.category, type=representation.type)
+            )
+
+        repr_path = cls.get_import_file(session, product.name, 
+            product.category, representation)
+
+        name = product.name
+        instances = kwargs.get('instances', 1)
+        instance_start = kwargs.get('instance_start', 0)
+        exportable = kwargs.get('exportable', True)
+
+        entities_to_create = []        
+
+        if instances == 1 and instance_start == 0:
+            session.cmds.file(
+                repr_path,
+                reference=True,
+                groupReference=True,
+                groupName=name,
+                mergeNamespacesOnClash=True, 
+                namespace=":"
+            )
+            if exportable:
+                entities_to_create.append((name, name, None))
+        else:
+            for inst in range(instance_start, instance_start + instances):
+                inst_name = name + "_" + str(inst)
+                session.cmds.file(
+                    repr_path,
+                    reference=True,
+                    groupReference=True,
+                    groupName=inst_name,
+                    mergeNamespacesOnClash=True, 
+                    namespace=":"
+                )
+                if exportable:
+                    entities_to_create.append((inst_name, name, inst))
+
+        entities = []
+        
+        if exportable:
+            for (obj_name, name, inst) in entities_to_create:
+                set_name = cls.get_set_name(name, inst)
+                session.cmds.sets(obj_name, name=set_name)
+
+                entities.append(cls.get(name, session, instance=inst))
+            
+        return entities
 
