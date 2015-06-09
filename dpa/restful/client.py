@@ -29,6 +29,16 @@ URL_CONFIG_PATH = "config/restful/urls.cfg"
 class RestfulClient(object):
 
     # -------------------------------------------------------------------------
+    # Initialization Function:
+    # -------------------------------------------------------------------------
+    def __init__(self, data_server=None):
+        if data_server is None:
+            from dpa.env.vars import DpaVars
+            self.data_server = DpaVars.data_server().get()
+        else:
+            self.data_server = data_server
+
+    # -------------------------------------------------------------------------
     # Class attributes:
     # -------------------------------------------------------------------------
 
@@ -48,21 +58,24 @@ class RestfulClient(object):
     # -------------------------------------------------------------------------
     # Class methods:
     # -------------------------------------------------------------------------
-    @classmethod
-    def execute_request(cls, action, data_type, primary_key=None, data=None,
+    def execute_request(self, action, data_type, primary_key=None, data=None,
         params=None, headers=None):
 
         # Never written this type of code before. If you are an experienced
         # web developer, please suggest improvements. Be gentle.
 
         # get method and url based on the action and data_type
-        (http_method, url) = cls._get_url(action, data_type,
+        (http_method, url) = self._get_url(action, data_type,
             primary_key=primary_key)
 
-        data_format = cls.data_format
+        return self.execute_request_url(http_method, url, data, params, headers)
+
+    def execute_request_url(self, http_method, url, data=None, params=None, headers=None):
+
+        data_format = self.data_format
 
         if params:
-            params = cls._sanitize_params(params)
+            params = self._sanitize_params(params)
 
         if data:
             data = json.dumps(data)
@@ -106,20 +119,16 @@ class RestfulClient(object):
     # -------------------------------------------------------------------------
     # Private class methods:
     # -------------------------------------------------------------------------
-    @classmethod
-    def _get_url(cls, action, data_type, primary_key=None):
+    def _get_url(self, action, data_type, primary_key=None):
 
-        data_format = cls.data_format
+        data_format = self.data_format
 
         # some hacky caching based on data type, method name, and primary key.
         cache_str = data_type + action + str(primary_key)
-        if cache_str in cls._url_cache.keys():
-            return cls._url_cache[cache_str]
+        if cache_str in self._url_cache.keys():
+            return self._url_cache[cache_str]
 
-        from dpa.env.vars import DpaVars
-        data_server = DpaVars.data_server().get()
-
-        if not data_server:
+        if not self.data_server:
             raise RestfulClientError(
                 "Unable to determine pipeline data server."
             )
@@ -143,17 +152,16 @@ class RestfulClient(object):
         url = url_pattern.format(
             data_format=data_format,
             data_type=data_type,
-            server=data_server,
+            server=self.data_server,
             primary_key=primary_key,
         )
 
-        cls._url_cache[cache_str] = (http_method, url)
+        self._url_cache[cache_str] = (http_method, url)
 
         return (http_method, url)
 
     # -------------------------------------------------------------------------
-    @classmethod
-    def _sanitize_params(cls, params=None):
+    def _sanitize_params(self, params=None):
         """Make sure all params are formatted properly."""
 
         if params is None:
@@ -165,8 +173,8 @@ class RestfulClient(object):
 
             # translate boolean value to proper str
             if isinstance(value, bool):
-                sanitized[key] = cls.param_bool_true_str \
-                    if value else cls.param_bool_false_str
+                sanitized[key] = self.param_bool_true_str \
+                    if value else self.param_bool_false_str
 
             # otherwise, make sure the value is a str
             else:
