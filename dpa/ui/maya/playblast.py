@@ -140,7 +140,8 @@ def playblaster(quality, sequence, autoReview):
         currentCam = cmds.modelPanel(cmds.getPanel(wf=True), q=True, cam=True)
         focalLength = cmds.camera(currentCam, q=True, fl=True)
         versionFrame = create_action.product_version.number_padded
-        fileName = "%s/playblast-%s" % (playblastdir,versionFrame)
+        baseFileName = "playblast-%s" % (versionFrame)
+        fileName = playblastdir + "/" + baseFileName
         print "writing playblast to file " + fileName + ".mov"
         if sequence:
             sqMgr = cmds.listConnections('sequenceManager1', s=True, d=False)[0]
@@ -153,14 +154,9 @@ def playblaster(quality, sequence, autoReview):
             cmds.playblast(f=fileName, percent=quality, offScreen=True, format="qt", width=xVal, height=yVal)
         cmds.deleteUI("PBQuality")
         os.chmod(fileName+ ".mov", 0777)
-        return True
-
-
-
-
-
-        #os.system('dpacreatereview ' + fileName + '.mov ' + pbstring)
-        #print "Review Item Generating with name: " + fileName + ".mov and at location: " + pbstring 
+        reviewcmd = "cd " + playblastdir + "; dpacreatereview " + baseFileName + ".mov " +  str(create_action.product_repr.spec)
+        print "creating review: " + reviewcmd
+        os.system( reviewcmd )
         return True
 
     cmds.error("Invalid selections.")
