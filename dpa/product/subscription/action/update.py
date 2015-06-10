@@ -283,7 +283,7 @@ class SubscriptionUpdateAction(Action):
                 },
             )
             
-            output.dump(output_format='table')
+        output.dump(output_format='table')
 
         if not updates:
             raise ActionAborted("Nothing to update.")

@@ -3,12 +3,39 @@ import os.path
 import re
 
 from dpa.app.entity import EntityRegistry, EntityError
-from dpa.maya.entity.base import SetBasedEntity
+from dpa.maya.entity.base import SetBasedWorkfileEntity
 
 # -----------------------------------------------------------------------------
-class CameraEntity(SetBasedEntity):
+class CameraEntity(SetBasedWorkfileEntity):
 
     category = "camera"
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def import_product_representation(cls, session, representation, *args,
+        **kwargs):
+
+        if representation.type == 'ma':
+            super(CameraEntity, cls).import_product_representation(
+                session, representation, *args, **kwargs)    
+        else:
+            if representation.type != 'fbx':
+                raise EntityError(
+                    "Unknown type for camera import: {typ}".format(
+                        representation.type))
+
+            cls._fbx_import(session, representation, *args, **kwargs)
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def _fbx_import(cls, session, representation, *args, **kwargs):
+        
+        # XXX needs to be revisitied. just making this work for now...
+
+        product = representation.product_version.product
+        fbx_file = cls.get_import_file(session, product.name, 
+            product.category, representation)
+        session.mel.eval('FBXImport -f "{path}" -s'.format(path=fbx_file))
 
     # -------------------------------------------------------------------------
     def export(self, product_desc=None, version_note=None, fbx_export=False,

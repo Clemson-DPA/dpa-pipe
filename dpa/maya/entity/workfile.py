@@ -3,11 +3,10 @@ import os
 import re
 
 from dpa.app.entity import EntityRegistry, EntityError
-from dpa.maya.entity.base import SetBasedEntity
-from dpa.ptask.area import PTaskArea, PTaskAreaError
+from dpa.maya.entity.base import SetBasedWorkfileEntity
 
 # -----------------------------------------------------------------------------
-class WorkfileEntity(SetBasedEntity):
+class WorkfileEntity(SetBasedWorkfileEntity):
 
     category = "workfile"
 
@@ -60,85 +59,6 @@ class WorkfileEntity(SetBasedEntity):
         base_name = cls._name_from_context(session)
         entities.append(cls.get(base_name, session))
 
-        return entities
-
-    # -------------------------------------------------------------------------
-    @classmethod
-    def import_product_representation(cls, session, representation, *args,
-        **kwargs):
-
-        product = representation.product_version.product
-
-        if representation.type != "ma":
-            raise EntityError(
-                "Don't know how to import {cat} of type {typ}".format(
-                    cat=cls.category, type=representation.type)
-            )
-
-        session_file_path = session.cmds.file(q=True, sceneName=True)
-
-        ptask_area = PTaskArea.current()
-        try:
-            import_dir = ptask_area.dir(dir_name='import', path=True)
-        except PTaskAreaError:
-            raise EntityError("Could not find import directory!")
-
-        repr_dir = os.path.join(
-            import_dir, 'global', product.name, product.category,
-            representation.type, representation.resolution
-        )
-
-        # get the .ma file in the repr_dir
-        repr_files = os.listdir(repr_dir)
-        ma_files = [f for f in repr_files if f.endswith('.ma')]
-        if len(ma_files) != 1:
-            raise EntityError("Could not identify .ma file for import.")
-
-        repr_path = os.path.join(repr_dir, ma_files[0])
-        repr_path = os.path.relpath(repr_path, 
-            os.path.dirname(session_file_path))
-
-        name = representation.product_version.product.name
-        instances = kwargs.get('instances', 1)
-        instance_start = kwargs.get('instance_start', 0)
-        exportable = kwargs.get('exportable', True)
-
-        entities_to_create = []        
-
-        if instances == 1 and instance_start == 0:
-            session.cmds.file(
-                repr_path,
-                reference=True,
-                groupReference=True,
-                groupName=name,
-                mergeNamespacesOnClash=1, 
-                namespace=":"
-            )
-            if exportable:
-                entities_to_create.append((name, name, None))
-        else:
-            for inst in range(instance_start, instance_start + instances):
-                inst_name = name + "_" + str(inst)
-                session.cmds.file(
-                    repr_path,
-                    reference=True,
-                    groupReference=True,
-                    groupName=inst_name,
-                    mergeNamespacesOnClash=1, 
-                    namespace=":"
-                )
-                if exportable:
-                    entities_to_create.append((inst_name, name, inst))
-
-        entities = []
-        
-        if exportable:
-            for (obj_name, name, inst) in entities_to_create:
-                set_name = cls.get_set_name(name, inst)
-                session.cmds.sets(obj_name, name=set_name)
-
-                entities.append(cls.get(name, session, instance=inst))
-            
         return entities
 
     # -------------------------------------------------------------------------
