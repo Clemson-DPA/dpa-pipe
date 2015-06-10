@@ -95,7 +95,7 @@ class MariSession(RemoteMixin, Session):
                 self.mari.projects.archive(uuid,file_path)
 
                 if not file_path:
-                    self.ptask_area.set_permissions(0660)
+                    os.chmod(file_path, 0770)
             else:
                 project.save(force_save=True)
         else:
