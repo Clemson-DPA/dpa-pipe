@@ -1,4 +1,4 @@
-#!/usr/bin/python
+
 # PB - PlayBlaster
 # Generates playblast from current maya scene. Includes camera focal length.
 

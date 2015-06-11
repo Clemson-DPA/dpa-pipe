@@ -3,12 +3,28 @@ import os.path
 import re
 
 from dpa.app.entity import EntityRegistry, EntityError
-from dpa.maya.entity.base import SetBasedEntity
+from dpa.maya.entity.base import SetBasedWorkfileEntity
 
 # -----------------------------------------------------------------------------
-class CameraEntity(SetBasedEntity):
+class CameraEntity(SetBasedWorkfileEntity):
 
     category = "camera"
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def import_product_representation(cls, session, representation, *args,
+        **kwargs):
+
+        if representation.type == 'ma':
+            super(CameraEntity, cls).import_product_representation(
+                session, representation, *args, **kwargs)    
+        else:
+            if representation.type != 'fbx':
+                raise EntityError(
+                    "Unknown type for {cat} import: {typ}".format(
+                        cls=cls.category, typ=representation.type))
+
+            cls._fbx_import(session, representation, *args, **kwargs)
 
     # -------------------------------------------------------------------------
     def export(self, product_desc=None, version_note=None, fbx_export=False,
@@ -49,7 +65,7 @@ class CameraEntity(SetBasedEntity):
 
         export_path = os.path.join(product_repr_dir, self.display_name)
 
-        with self.session.selected(export_objs, dependencies=False):
+        with self.session.selected(export_objs):
             self.session.mel.eval(
                 'FBXExport -f "{path}" -s'.format(path=export_path))
 
@@ -70,7 +86,7 @@ class CameraEntity(SetBasedEntity):
 
         export_objs = self.get_export_objects()
 
-        with self.session.selected(export_objs, dependencies=False):
+        with self.session.selected(export_objs):
             self.session.cmds.file(
                 product_repr_file, 
                 type='mayaAscii', 
