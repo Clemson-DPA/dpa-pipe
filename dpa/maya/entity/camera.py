@@ -21,21 +21,10 @@ class CameraEntity(SetBasedWorkfileEntity):
         else:
             if representation.type != 'fbx':
                 raise EntityError(
-                    "Unknown type for camera import: {typ}".format(
-                        representation.type))
+                    "Unknown type for {cat} import: {typ}".format(
+                        cls=cls.category, typ=representation.type))
 
             cls._fbx_import(session, representation, *args, **kwargs)
-
-    # -------------------------------------------------------------------------
-    @classmethod
-    def _fbx_import(cls, session, representation, *args, **kwargs):
-        
-        # XXX needs to be revisitied. just making this work for now...
-
-        product = representation.product_version.product
-        fbx_file = cls.get_import_file(session, product.name, 
-            product.category, representation)
-        session.mel.eval('FBXImport -f "{path}" -s'.format(path=fbx_file))
 
     # -------------------------------------------------------------------------
     def export(self, product_desc=None, version_note=None, fbx_export=False,
@@ -76,7 +65,7 @@ class CameraEntity(SetBasedWorkfileEntity):
 
         export_path = os.path.join(product_repr_dir, self.display_name)
 
-        with self.session.selected(export_objs, dependencies=False):
+        with self.session.selected(export_objs):
             self.session.mel.eval(
                 'FBXExport -f "{path}" -s'.format(path=export_path))
 
@@ -97,7 +86,7 @@ class CameraEntity(SetBasedWorkfileEntity):
 
         export_objs = self.get_export_objects()
 
-        with self.session.selected(export_objs, dependencies=False):
+        with self.session.selected(export_objs):
             self.session.cmds.file(
                 product_repr_file, 
                 type='mayaAscii', 

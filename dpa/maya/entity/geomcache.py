@@ -11,6 +11,20 @@ class GeomcacheEntity(SetBasedEntity):
     category = "geomcache"
 
     # -------------------------------------------------------------------------
+    @classmethod
+    def import_product_representation(cls, session, representation, *args,
+        **kwargs):
+
+        if representation.type == 'fbx':
+            cls._fbx_import(session, representation, *args, **kwargs)
+        elif representation.type == 'abc':
+            cls._abc_import(session, representation, *args, **kwargs)
+        else:
+            raise EntityError(
+                "Unknown type for {cat} import: {typ}".format(
+                    cat=cls.category, typ=representation.type))
+
+    # -------------------------------------------------------------------------
     def export(self, product_desc=None, version_note=None, fbx_export=False,
         fbx_options=None, abc_export=False, abc_options=None):
         """Export this entity to a product."""
@@ -87,7 +101,7 @@ class GeomcacheEntity(SetBasedEntity):
 
         export_path = os.path.join(product_repr_dir, self.display_name)
 
-        with self.session.selected(export_objs, dependencies=False):
+        with self.session.selected(export_objs):
             self.session.mel.eval(
                 'FBXExport -f "{path}" -s'.format(path=export_path))
 

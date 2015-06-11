@@ -85,7 +85,7 @@ class WorkfileEntity(SetBasedWorkfileEntity):
             )
         else:
             export_objs = self.get_export_objects()
-            with self.session.selected(export_objs, dependencies=False):
+            with self.session.selected(export_objs):
                 self.session.cmds.file(
                     product_repr_file, 
                     type='mayaAscii', 

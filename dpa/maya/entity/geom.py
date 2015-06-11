@@ -34,20 +34,21 @@ class GeomEntity(SetBasedEntity):
         if not self.session.cmds.pluginInfo(
             'objExport', query=True, loaded=True):
             raise EntityError(
-                "Unable to export '{pn}'. Maya objExport plugin not loaded!".format(
+                "Unable to export '{pn}'. " + \
+                "Maya objExport plugin not loaded!".format(
                     pn=self.product_name)
             )
 
         file_ext = 'obj'
 
-        product_repr = self._create_product(product_desc, version_note, file_ext)
+        product_repr = self._create_product(product_desc, version_note, 
+            file_ext)
         product_repr_dir = product_repr.directory
 
         export_objs = self.get_export_objects()
-
         export_path = os.path.join(product_repr_dir, self.display_name)
 
-        with self.session.selected(export_objs, dependencies=True):
+        with self.session.selected(export_objs):
             self.session.mel.eval('CreatePolyFromPreview;')
             self.session.cmds.file(export_path, force=True, type='OBJexport', exportSelected=True,
                 options='groups=0;ptgroups=0;materials=0;smoothing=1;normals=0')
