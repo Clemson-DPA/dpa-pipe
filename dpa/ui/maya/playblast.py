@@ -116,7 +116,7 @@ def playblaster(quality, sequence, autoReview):
             cmds.playblast(f=fileName, percent=quality, offScreen=True, format="qt", width=xVal, height=yVal)
         cmds.deleteUI("PBQuality")
         os.chmod(fileName+ ".mov", 0777)
-        os.system( "vlc " + fileName + ".mov" )
+        os.system( "vlc " + fileName + ".mov &" )
         return True
     if autoReview:
         #create a product to put this in
