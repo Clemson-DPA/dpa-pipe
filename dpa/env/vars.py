@@ -202,7 +202,16 @@ class DpaVars(object):
     data_server = staticmethod(
         lambda default="": EnvVar('DPA_DATA_SERVER', default)
     )
-    """Returns an instance of :py:obj:`dpa.env.EnvVar` for ``$DPA_DATASERVER``
+    """Returns an instance of :py:obj:`dpa.env.EnvVar` for ``$DPA_DATA_SERVER``
+
+    This defines the server to connect to in order to query pipeline data.
+
+    """
+
+    cheesyq_data_server = staticmethod(
+        lambda default="": EnvVar('CHEESYQ_DATA_SERVER', default)
+    )
+    """Returns an instance of :py:obj:`dpa.env.EnvVar` for ``$CHEESYQ_DATA_SERVER``
 
     This defines the server to connect to in order to query pipeline data.
 
