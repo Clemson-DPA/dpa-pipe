@@ -6,6 +6,7 @@ import os
 from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
 from dpa.config import Config
+from dpa.ptask.area import PTaskArea
 from dpa.ptask.spec import PTaskSpec
 from dpa.singleton import Singleton
 
@@ -38,6 +39,38 @@ class Entity(object):
 
     _option_configs = {}
 
+    # -------------------------------------------------------------------------
+    @classmethod
+    def get_import_file(cls, session, name, category, representation,
+        relative_to=None):
+
+        ptask_area = PTaskArea.current()
+        try:
+            import_dir = ptask_area.dir(dir_name='import', path=True)
+        except PTaskAreaError:
+            raise EntityError("Could not find import directory!")
+
+        import_dir = os.path.join(
+            import_dir, 'global', name, category, representation.type, 
+            representation.resolution
+        )
+
+        # get the file in the import_dir
+        import_files = os.listdir(import_dir)
+        type_files = [f for f in import_files 
+            if f.endswith('.' + representation.type)]
+        if len(type_files) != 1:
+            raise EntityError(
+                "Could not identify .{typ} file for import.".format(
+                    typ=representation.type))
+
+        import_path = os.path.join(import_dir, type_files[0])
+
+        if relative_to:
+            import_path = os.path.relpath(import_path, relative_to)
+
+        return import_path
+    
     # -------------------------------------------------------------------------
     @classmethod
     def option_config(cls, session, action, file_type=None):
