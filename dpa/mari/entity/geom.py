@@ -1,106 +1,105 @@
-import re
-import os.path
 import os
 
-from dpa.action import ActionError
-from dpa.action.registry import ActionRegistry
 from dpa.app.entity import Entity, EntityRegistry, EntityError
-from dpa.config import Config
-
 
 # -----------------------------------------------------------------------------
 class GeomEntity(Entity):
 
-    category = "geom"
-    exportable = False
+    category = 'geom'
+
+    CHANNEL_CONFIG = 'config/mari/geom/channels.cfg'
 
     # -------------------------------------------------------------------------
-    # I'm hacking this until we get a proper subscribe and import dialogue
-    def export(self):
-        pass
+    @classmethod
+    def import_product_representation(cls, session, representation, *args, 
+        **kwargs):
 
-    # -------------------------------------------------------------------------
-    def import_product(self, file_name, file_path):
-        # if OBJ file....
-        if self.session.mari.projects.current():
+        if session.mari.projects.current():
             raise EntityError("Cannot have a project open when importing.")
 
-        self.create_project(file_name, file_path)
+        channel_config = session.ptask_area.config(cls.CHANNEL_CONFIG, 
+            composite_ancestors=True)
+
+        if not channel_config or not hasattr(channel_config, 'channels'):
+            raise EntityError(
+                "Unable to find channel config for {cat} import.".format(
+                    cat=cls.category))
+
+        product_name = representation.product_version.product.name
+                
+        channels = []
+
+        # create the channels
+        for (channel_name, channel_options) in channel_config.channels.iteritems():
+
+            # prepend the product name to the channel
+            channel_name = product_name + '_' + channel_name
+            
+            # retrieve the channel options
+            color_values = channel_options.get('color', [0.5, 0.5, 0.5, 1.0])
+            color = session.mari.Color(*color_values[0:3])
+            use_alpha = channel_options.get('alpha', True)
+            depth = channel_options.get('depth', 16)
+
+            channel = session.mari.ChannelInfo(channel_name, 
+                use_alpha=use_alpha, fill_color=color)
+            channel.setDepth(depth)
+
+            channels.append(channel)
+
+        mari_dir = session.ptask_area.dir(dir_name='mari')
+
+        # get a path to the geom product via the import directory
+        geom_file = cls.get_import_file(session, product_name, cls.category,
+            representation)
+
+        # create the project
+        session.mari.projects.create(product_name, geom_file, channels)
+
+        # now account for adjustment layers, etc.    
+        for (channel_name, channel_options) in channel_config.channels.iteritems():
+
+            # prepend the product name to the channel
+            channel_name = product_name + '_' + channel_name
+
+            # layers
+            if 'layers' in channel_options:
+
+                for (layer_type, layer_options) in \
+                    channel_options.layers.iteritems():
+
+                    # adjustment layer
+                    if layer_type == 'adjustment':
+                        for (layer_name, adjustment_key) in \
+                            layer_options.iteritems():
+
+                            geo = session.mari.geo.current()
+                            geo_channel = geo.channel(channel_name)
+                            adjustment_layer = \
+                                geo_channel.createAdjustmentLayer(
+                                    layer_name, adjustment_key)
+                            adjustment_layer.setVisibility(False)
+
+                    # other layer types...
+
+        # close and archive the new project
+        project = session.mari.projects.current()
+        uuid = project.uuid()
+        project.save(force_save=True)
+        project.close(confirm_if_modified=False)
+
+        # archive
+        mari_file = os.path.join(mari_dir, product_name + '.mra')
+        session.mari.projects.archive(uuid, mari_file)
+        os.chmod(mari_file, 0770)
+        session.mari.projects.open(uuid)
 
     # -------------------------------------------------------------------------
-    def create_project(self, file_name, file_path):
-        # very mari specific
-        add_channels = []
-        self._read_cfg('channels')
-
-        for (ch_name, opts) in self.opts.channels.iteritems():
-            c = opts.get('color', [0.5,0.5,0.5,1.0])
-            color = self.session.mari.Color(c[0], c[1], c[2], c[3])
-
-            alpha = opts.get('alpha', True)
-
-            # create channels
-            ch = self.session.mari.ChannelInfo(ch_name, use_alpha=alpha,
-                fill_color=color)
-
-            d = opts.get('depth', 16)
-            ch.setDepth(d)
-
-            add_channels.append(ch)
-
-        # creates project
-        self.session.mari.projects.create(file_name, file_path, 
-            add_channels)
-
-        # add layers doug wanted (srgb2linear)
-        for (ch_name, opts) in self.opts.channels.iteritems():
-            if 'layer' in opts:
-                for (ltype, vals) in opts.layer.iteritems():
-                    if ltype == 'adjustment':
-                        for (lname, pkey) in vals.iteritems():
-                            geo = self.session.mari.geo.current()
-                            geoch = geo.channel(ch_name)
-                            adj = geoch.createAdjustmentLayer(lname,pkey)
-                            adj.setVisibility(False)
-
-        # close and archive...just because
-        proj = self.session.mari.projects.current()
-        uuid = proj.uuid()
-        proj.save(force_save=True)
-        proj.close(confirm_if_modified=False)
-
-        # i need a file path....
-        ptask_dir = self.session.ptask_area.dir()
-        mari_proj = os.path.join(ptask_dir, self.session.app_name, 
-            self.session.ptask.name) + '.mra'
-
-        self.session.mari.projects.archive(uuid,mari_proj)
-        os.chmod(file_path, 0770)
-        self.session.mari.projects.open(uuid)
-
-    # -------------------------------------------------------------------------
-    def _read_cfg(self, action):
-        app_name = self.session.app_name
+    def export(self, *args, **kwargs):
+        """Export this entity to a product.""" 
         
-        rel_cfg = os.path.join('config', app_name, self.category, action)
-        rel_cfg += '.cfg'
-
-        ptask_area = self.session.ptask_area
-        action_cfg = ptask_area.config(rel_cfg, composite_ancestors=True)
-
-        if not action_cfg or not hasattr(action_cfg, 'channels'):
-            raise ActionError(
-                "Cannot create mari project without set config.")
-
-        self._opts = action_cfg
-
-    #  -------------------------------------------------------------------------
-    @property
-    def opts(self):
-        if not hasattr(self, '_opts'):
-            return None
-
-        return self._opts
+        raise EntityError("Mari geom export not supported.")
 
 # -----------------------------------------------------------------------------
 EntityRegistry().register('mari', GeomEntity)
+
