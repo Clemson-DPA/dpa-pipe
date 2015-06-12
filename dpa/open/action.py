@@ -66,7 +66,7 @@ class OpenAction(Action):
         cmd = cmd.strip()
 
         if self.interactive:
-            print "\n> " + cmd + " &\n"
+            print "\n> " + cmd + "\n"
 
         if self.noop:
             return
