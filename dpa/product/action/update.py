@@ -10,6 +10,10 @@ from dpa.ptask.spec import PTaskSpec
 from dpa.user import User
 
 # -----------------------------------------------------------------------------
+
+LATEST_VERSION = -1
+
+# -----------------------------------------------------------------------------
 class ProductUpdateAction(Action):
     """Update a product's state."""
 
@@ -31,7 +35,8 @@ class ProductUpdateAction(Action):
 
         parser.add_argument(
             "-p", "--publish",
-            nargs='+',
+            nargs='?',
+            const=[LATEST_VERSION],
             default=None,
             metavar="version(s)",
             type=int,
@@ -40,7 +45,8 @@ class ProductUpdateAction(Action):
 
         parser.add_argument(
             "-u", "--unpublish",
-            nargs='+',
+            nargs='?',
+            const=[LATEST_VERSION],
             default=None,
             metavar="version(s)",
             type=int,
@@ -51,7 +57,8 @@ class ProductUpdateAction(Action):
 
         parser.add_argument(
             "-d", "--deprecate",
-            nargs='+',
+            nargs='?',
+            const=[LATEST_VERSION],
             default=None,
             metavar="version(s)",
             type=int,
@@ -60,7 +67,8 @@ class ProductUpdateAction(Action):
 
         parser.add_argument(
             "--undeprecate",
-            nargs='+',
+            nargs='?',
+            const=[LATEST_VERSION],
             default=None,
             metavar="version(s)",
             type=int,
@@ -73,8 +81,9 @@ class ProductUpdateAction(Action):
 
         official_group.add_argument(
             "-o", "--official",
-            nargs=1,
+            nargs='?',
             default=None,
+            const=[LATEST_VERSION],
             metavar="version",
             type=int,
             help="Official a version of this product.",
@@ -375,9 +384,18 @@ class ProductUpdateAction(Action):
     # -------------------------------------------------------------------------
     def _nums_to_versions(self, nums):
 
+        product_vers = None
+
         versions = []
         for num in nums:
-            if isinstance(num, ProductVersion) and num.product == self.product:
+            if num is LATEST_VERSION:
+
+                if not product_vers:
+                    product_vers = self.product.versions
+                    product_vers.sort(key=lambda v: v.number)
+                
+                versions.append(product_vers[-1])
+            elif isinstance(num, ProductVersion) and num.product == self.product:
                 versions.append(num)
             else:
                 try:
