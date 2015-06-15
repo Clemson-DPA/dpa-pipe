@@ -90,7 +90,9 @@ def playblaster(quality, sequence, autoReview):
     else:
         print "You need to dpaset into a ptask to use this tool."
         return False
-    
+    cameraName = cmds.camera()[0].title()
+    specName = spec.name(spec).title()
+
     if not autoReview:
         playblastdir = "/scratch" + area.dir()
         #listing = os.listdir(playblastdir)
@@ -101,7 +103,7 @@ def playblaster(quality, sequence, autoReview):
         versionFrame = "%04d" % (nbversions + 1 )
         currentCam = cmds.modelPanel(cmds.getPanel(wf=True), q=True, cam=True)
         focalLength = cmds.camera(currentCam, q=True, fl=True)
-        fileName = "%s/playblast-%s" % (playblastdir,versionFrame)
+        fileName = "%s/playblast%s%s-%s" % (playblastdir,specName,cameraName,versionFrame)
         print "writing playblast to file " + fileName + ".mov"
         xVal = cmds.getAttr('defaultResolution.width')
         yVal = cmds.getAttr('defaultResolution.height')
@@ -140,7 +142,7 @@ def playblaster(quality, sequence, autoReview):
         currentCam = cmds.modelPanel(cmds.getPanel(wf=True), q=True, cam=True)
         focalLength = cmds.camera(currentCam, q=True, fl=True)
         versionFrame = create_action.product_version.number_padded
-        baseFileName = "playblast-%s" % (versionFrame)
+        baseFileName = "playblast%s%s-%s" % (specName,cameraName,versionFrame)
         fileName = playblastdir + "/" + baseFileName
         print "writing playblast to file " + fileName + ".mov"
         if sequence:
@@ -157,6 +159,7 @@ def playblaster(quality, sequence, autoReview):
         reviewcmd = "cd " + playblastdir + "; dpacreatereview " + baseFileName + ".mov " +  str(create_action.product_repr.spec)
         print "creating review: " + reviewcmd
         os.system( reviewcmd )
+        os.system( "vlc " + fileName + ".mov &" )
         return True
 
     cmds.error("Invalid selections.")
