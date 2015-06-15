@@ -179,6 +179,7 @@ class SetBasedWorkfileEntity(SetBasedEntity):
         instances = kwargs.get('instances', 1)
         instance_start = kwargs.get('instance_start', 0)
         exportable = kwargs.get('exportable', True)
+        group_reference = kwargs.get('group_reference', False)
 
         entities_to_create = []        
 
@@ -186,26 +187,40 @@ class SetBasedWorkfileEntity(SetBasedEntity):
             session.cmds.file(
                 repr_path,
                 reference=True,
-                groupReference=True,
+                groupReference=group_reference,
                 groupName=name,
                 mergeNamespacesOnClash=True, 
                 namespace=":"
             )
             if exportable:
-                entities_to_create.append((name, name, None))
+                if group_reference:
+                    entities_to_create.append((name, name, None))
+                else:
+                    ref_node = session.cmds.file(
+                        repr_path, referenceNode=True, query=True)
+                    entities_to_create.append(
+                        (cls._get_top_level_ref_objs(session, ref_node),
+                            name, None))
         else:
             for inst in range(instance_start, instance_start + instances):
                 inst_name = name + "_" + str(inst)
                 session.cmds.file(
                     repr_path,
                     reference=True,
-                    groupReference=True,
+                    groupReference=group_reference,
                     groupName=inst_name,
                     mergeNamespacesOnClash=True, 
                     namespace=":"
                 )
                 if exportable:
-                    entities_to_create.append((inst_name, name, inst))
+                    if group_reference:
+                        entities_to_create.append((inst_name, name, inst))
+                    else:
+                        ref_node = session.cmds.file(
+                            repr_path, referenceNode=True, query=True)
+                        entities_to_create.append(
+                            (cls._get_top_level_ref_objs(session, ref_node), 
+                                name, inst))
 
         entities = []
         
@@ -217,4 +232,17 @@ class SetBasedWorkfileEntity(SetBasedEntity):
                 entities.append(cls.get(name, session, instance=inst))
             
         return entities
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def _get_top_level_ref_objs(cls, session, ref_node):
+        
+        ref_objs = session.cmds.referenceQuery(ref_node, nodes=True)
+        top_level_objs = session.cmds.ls(references=True, assemblies=True)
+        top_level_ref_objs= []
+        for top_level_obj in top_level_objs:
+            if top_level_obj in ref_objs:
+                top_level_ref_objs.append(top_level_obj)
+        
+        return top_level_ref_objs
 
