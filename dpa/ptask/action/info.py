@@ -114,6 +114,7 @@ class PTaskInfoAction(Action):
     def _ptask_info(self):
 
         # define the fields names
+        version = "Current version"
         description = "Description"
         due_date = "Due date"
         priority = "Priority"
@@ -127,6 +128,7 @@ class PTaskInfoAction(Action):
         # display order of the information
         output.header_names = [
             ptask_type,
+            version,
             description,
             status,
             start_date,
@@ -138,6 +140,7 @@ class PTaskInfoAction(Action):
         output.add_item(
             {
                 ptask_type: self.ptask.ptask_type,
+                version: self.ptask.latest_version.number_padded,
                 description: self.ptask.description,
                 status: self.ptask.status,
                 start_date: str(self.ptask.start_date),

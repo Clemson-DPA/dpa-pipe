@@ -10,6 +10,10 @@ from dpa.action.registry import ActionRegistry
 from dpa.cli import ParseDateArg
 from dpa.config import Config
 from dpa.location import current_location_code
+from dpa.product.subscription import (
+    ProductSubscription, 
+    ProductSubscriptionError,
+)
 from dpa.ptask import PTask, PTaskError, validate_ptask_name
 from dpa.ptask.area import PTaskArea, PTaskAreaError
 from dpa.ptask.cli import ParsePTaskSpecArg
@@ -528,6 +532,9 @@ class PTaskCreateAction(Action):
 
         exceptions = []
 
+        # copy the subscriptions from the source ptask
+        self._source_subs(self.source, self.ptask)
+
         # recursively create child ptasks from the source
         for source_child in self.source.children:
 
@@ -554,4 +561,51 @@ class PTaskCreateAction(Action):
             raise ActionError(
                 "Problem sourcing: " + self.source.spec + "\n\n" + msg
             )
+
+    # -------------------------------------------------------------------------
+    def _source_subs(self, source_ptask, dest_ptask):
+
+        if self.interactive:
+            print "\nSourcing subscriptions:"
+
+        dest_ptask_version_spec = dest_ptask.latest_version.spec
+        exceptions = []
+        
+        for sub in source_ptask.latest_version.subscriptions:
+            try:
+                new_sub = ProductSubscription.create(
+                    dest_ptask_version_spec,
+                    sub.product_version_spec,
+                )
+            except ProductSubscriptionError as e:
+                exceptions.append((sub, e))
+            else:
+                print "  " + Style.bright + \
+                    str(sub.product_version_spec) + Style.normal
+
+        if exceptions:
+            msgs = []
+            for (sub, e) in exceptions:
+                msgs.append(sub.product_version_spec + ": " + str(e))
+            
+            raise ActionError(
+                "Unable to copy forward some subscriptions:\n\n" + \
+                    "\n".join(msgs)
+            )
+        else:
+            # build the import directory...
+            if self.interactive:
+                print "\nRefreshing subscriptions."
+            
+            # refresh the subscriptions on disk
+            refresh_action_cls = ActionRegistry().get_action('refresh', 'subs')
+            if not refresh_action_cls:
+                raise ActionError("Could not find sub refresh action.")
+
+            try:
+                refresh_action = refresh_action_cls(dest_ptask)
+                refresh_action.interactive = False
+                refresh_action()
+            except ActionError as e:
+                raise ActionError("Failed to refresh subs on disk: " + str(e))
 

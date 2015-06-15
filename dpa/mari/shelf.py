@@ -1,4 +1,5 @@
 
+import sys
 import mari
 
 from dpa.ui.icon.factory import IconFactory
@@ -12,7 +13,7 @@ class MariShelf(object):
         self._name = name
 
         if not layout:
-            layout = QtGui.QVBoxLayout()
+            layout = QtGui.QHBoxLayout()
         self._layout = layout
 
         if not widget:
@@ -29,28 +30,27 @@ class MariShelf(object):
     # -------------------------------------------------------------------------
     def add_button(self, **kwargs):
 
-        import sys
         # so not sure if this is going to work, yay programming!
         # intercept/adjust some of the arguments
-        label = ''
-        cmd = ''
+
+        cmd = kwargs.get('command', 'print "No action defined"')
+        label = kwargs.get('label', 'Unknown')
+        annotation = kwargs.get('annotation', '')
+        image = QtGui.QPixmap()
 
         for (key, val) in kwargs.iteritems():
-
-            # get label
-            if key.startswith("label"):
-                label = val
-
-            # get command...
-            if key.startswith("command"):
-                cmd = val
-
-            # get full image path
             if key.startswith("image") and IconFactory.is_icon_path(val):
-                button = QtGui.QPushButton(
-                    QtGui.QPixmap(self.icon_factory.disk_path(val)), label)
-                button.clicked.connect(lambda: self._exec_cmd(cmd))
-                self.layout.addWidget(button)
+                image = QtGui.QIcon(self.icon_factory.disk_path(val))
+
+        action = QtGui.QAction(self.widget)
+        action.setIcon(image)
+        action.setToolTip(annotation)
+        action.triggered.connect(lambda: self._exec_cmd(cmd))
+
+        button = QtGui.QToolButton()
+        button.setAutoRaise(True)
+        button.setDefaultAction(action)
+        self.layout.addWidget(button)
 
     # -------------------------------------------------------------------------
     def create(self):
@@ -99,4 +99,4 @@ class MariShelf(object):
     def _exec_cmd(self, cmd):
         # to work with the way the shelves.cfg is setup
         if cmd:
-            exec cmd
+            exec(cmd)

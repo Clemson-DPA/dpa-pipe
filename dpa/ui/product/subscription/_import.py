@@ -40,7 +40,9 @@ class SubscriptionImportWizard(QtGui.QWizard):
             self.session.app_name)
 
         # map entity category to class
-        self._category_lookup = {cls.category: cls for cls in entity_classes}
+        self._category_lookup = {}
+        for cls in entity_classes:
+            self._category_lookup[cls.category] = cls
 
         selection_id = self.addPage(self.sub_selection_page)
         options_id = self.addPage(self.import_options_page)
