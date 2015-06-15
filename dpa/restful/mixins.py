@@ -110,6 +110,7 @@ class UpdateMixin(object):
     # -------------------------------------------------------------------------
     def update(self, primary_key, data, data_server=None):
 
+        cls = self.__class__
         update_data = copy.deepcopy(self._data.data_dict)
 
         # update the dictionary with the new data
@@ -121,7 +122,6 @@ class UpdateMixin(object):
             if val is not None:
                 update_data[key] = val
 
-        cls = self.__class__
 
         try:
             db_data = RestfulClient(data_server=data_server).execute_request(
