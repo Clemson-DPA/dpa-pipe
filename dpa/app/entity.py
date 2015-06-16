@@ -41,7 +41,32 @@ class Entity(object):
 
     # -------------------------------------------------------------------------
     @classmethod
-    def get_import_file(cls, session, name, category, representation,
+    def get_import_file_common_base(cls, session, name, category,
+        representation, relative_to=None):
+
+        import_files = cls.get_import_files(session, name, category,
+            representation, relative_to=relative_to)
+
+        # assume files are of form <name>.[<something>].<ext>. 
+        # Look for the most common <name> and return that part (everything
+        # before the first '.'
+        
+        name_lookup = defaultdict(int)
+
+        for import_file in import_files:
+            (import_dir, import_file_name) = os.path.split(import_file)
+            file_parts = import_file_name.split(".")
+            import_file_base = os.path.join(import_dir, file_parts[0])
+            name_lookup[import_file_base] += 1
+
+        # sort the dictionary keys based on count, return the last item
+        base_list = sorted(name_lookup.keys(), key=lambda k: name_lookup[k])
+
+        return base_list[-1]
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def get_import_files(cls, session, name, category, representation,
         relative_to=None):
 
         ptask_area = PTaskArea.current()
@@ -57,20 +82,33 @@ class Entity(object):
 
         # get the file in the import_dir
         import_files = os.listdir(import_dir)
-        type_files = [f for f in import_files 
+        import_files = [f for f in import_files 
             if f.endswith('.' + representation.type)]
-        if len(type_files) != 1:
+
+        # prepend the import directory to get the full path
+        import_files = [os.path.join(import_dir, f) for f in import_files]
+
+        if relative_to:
+            import_files = [
+                os.path.relpath(f, relative_to) for f in import_files] 
+
+        return import_files
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def get_import_file(cls, session, name, category, representation,
+        relative_to=None):
+
+        import_files = cls.get_import_files(session, name, category,
+            representation, relative_to=relative_to)
+
+        if len(import_files) != 1:
             raise EntityError(
                 "Could not identify .{typ} file for import.".format(
                     typ=representation.type))
 
-        import_path = os.path.join(import_dir, type_files[0])
+        return import_files[0]
 
-        if relative_to:
-            import_path = os.path.relpath(import_path, relative_to)
-
-        return import_path
-    
     # -------------------------------------------------------------------------
     @classmethod
     def option_config(cls, session, action, file_type=None):

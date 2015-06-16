@@ -90,7 +90,9 @@ def playblaster(quality, sequence, autoReview):
     else:
         print "You need to dpaset into a ptask to use this tool."
         return False
-    cameraName = cmds.camera()[0].title()
+    currentCam = cmds.modelPanel(cmds.getPanel(wf=True), q=True, cam=True)
+    focalLength = cmds.camera(currentCam, q=True, fl=True)
+    cameraName = currentCam.title() + "Fov" + str(focalLength)
     specName = spec.name(spec).title()
 
     if not autoReview:
@@ -101,8 +103,6 @@ def playblaster(quality, sequence, autoReview):
         #get a listing of the version numbers in the directory
         nbversions = len(os.listdir(playblastdir))
         versionFrame = "%04d" % (nbversions + 1 )
-        currentCam = cmds.modelPanel(cmds.getPanel(wf=True), q=True, cam=True)
-        focalLength = cmds.camera(currentCam, q=True, fl=True)
         fileName = "%s/playblast%s%s-%s" % (playblastdir,specName,cameraName,versionFrame)
         print "writing playblast to file " + fileName + ".mov"
         xVal = cmds.getAttr('defaultResolution.width')
@@ -139,8 +139,6 @@ def playblaster(quality, sequence, autoReview):
         #use product to get the directory path
         area = create_action.product_repr.area
         playblastdir = area.dir()
-        currentCam = cmds.modelPanel(cmds.getPanel(wf=True), q=True, cam=True)
-        focalLength = cmds.camera(currentCam, q=True, fl=True)
         versionFrame = create_action.product_version.number_padded
         baseFileName = "playblast%s%s-%s" % (specName,cameraName,versionFrame)
         fileName = playblastdir + "/" + baseFileName
