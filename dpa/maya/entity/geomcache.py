@@ -46,13 +46,7 @@ class GeomcacheEntity(SetBasedEntity):
     # -------------------------------------------------------------------------
     def _abc_export(self, options, product_desc, version_note):
 
-        # ensure abc plugin in is loaded
-        if not self.session.cmds.pluginInfo(
-            'AbcExport', query=True, loaded=True):
-            raise EntityError(
-                "Unable to export '{pn}'. Maya abc plugin not loaded!".format(
-                    pn=self.product_name)
-            )
+        self.session.require_plugin('AbcExport')
 
         file_ext = 'abc'
 
@@ -84,13 +78,7 @@ class GeomcacheEntity(SetBasedEntity):
     # -------------------------------------------------------------------------
     def _fbx_export(self, options, product_desc, version_note):
 
-        # ensure fbx plugin in is loaded
-        if not self.session.cmds.pluginInfo(
-            'fbxmaya', query=True, loaded=True):
-            raise EntityError(
-                "Unable to export '{pn}'. Maya fbx plugin not loaded!".format(
-                    pn=self.product_name)
-            )
+        self.session.require_plugin('fbxmaya')
 
         file_ext = 'fbx'
 

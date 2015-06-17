@@ -13,11 +13,7 @@ class MapsEntity(MayaEntity):
         **kwargs):
         """Import maps into the session."""
 
-        if not session.cmds.pluginInfo('RenderMan_for_Maya', query=True,
-            loaded=True):
-
-            # load the plugin
-            session.cmds.loadPlugin('RenderMan_for_Maya')
+        session.require_plugin('RenderMan_for_Maya')
 
         product_version = representation.product_version
         product = product_version.product
@@ -32,8 +28,11 @@ class MapsEntity(MayaEntity):
             name=file_node_name)
 
         # set UDIM/ATLAS support to mari
+        current_file = session.cmds.file(q=True, sceneName=True)
         import_base = cls.get_import_file_common_base(session, 
-            product.name, product.category, representation)
+            product.name, product.category, representation,
+            relative_to=current_file
+        )
         map_path = import_base + '._MAPID_.' + representation.type
         session.cmds.setAttr(file_node + '.fileTextureName', map_path,
             type="string")
