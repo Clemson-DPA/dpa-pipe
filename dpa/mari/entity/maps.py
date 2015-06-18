@@ -14,56 +14,96 @@ class MapsEntity(Entity):
     importable = False
 
     #-------------------------------------------------------------------------
-    def export(self, product_desc=None, version_note=None, tif_export=True,
-        tif_options=None, tex_export=False, tex_options=None):
+    def export(self, product_desc=None, version_note=None, **kwargs):
         """Export this entity to a product."""
+    
+        tex_convert = kwargs.get('tex_convert', True)
+        tex_queue = kwargs.get('tex_queue', True)
+        
+        tif_product_repr = self._tif_export(product_desc, version_note)
+        product_reprs = [tif_product_repr]
 
-        product_reprs = []
-
-        # should ALWAYS be called
-        if tif_export:
+        if tex_convert:
             product_reprs.extend(
-                self._tif_export(tif_options, product_desc, version_note)
-            )
-
-        # this is actually optional, reliant on tifs
-        if tex_export:
-            product_reprs.extend(
-                self._tex_export(tex_options, product_desc, version_note)
+                self._tex_convert(product_desc, version_note, tif_product_repr, 
+                    tex_queue)
             )
 
         return product_reprs
 
     # -------------------------------------------------------------------------
-    def _tif_export(self, options, product_desc, version_note):
+    def _tif_export(self, product_desc, version_note):
 
         file_ext = 'tif'
-
         product_repr = self._create_product(product_desc, version_note, file_ext)
         product_repr_dir = product_repr.directory
+        name = self.display_name
 
-        export_path = os.path.join(product_repr_dir, self.display_name + 
-            '.$UDIM.' + file_ext)
+        export_path = os.path.join(product_repr_dir, name + '.$UDIM.' + file_ext)
 
-        self.__class__.do_export(self.session, self.display_name, export_path)
+        # mari specific
+        self.session.mari.history.startMacro('Exporting ' + name + ' Channel')
+
+        try:
+            channel = self.session.mari.geo.current().channel(name)
+            snapshot = channel.createSnapshot('Backup pre-flattening', name)
+            layer = channel.flatten()
+            imgage_set = layer.imageSet()
+            imgage_set.exportImages(export_path)
+
+            self.session.mari.history.stopMacro()
+
+            channel.revertToSnapshot(snapshot)
+            channel.deleteSnapshot(snapshot)
+        except Exception as e:
+            self.session.mari.history.stopMacro()
+            self.session.mari.history.undo()
+            self.session.mari.utils.message("Error with tif texture export.")
 
         product_repr.area.set_permissions(0660)
         
-        return [product_repr]  
+        return product_repr  
 
     # -------------------------------------------------------------------------
-    def _tex_export(self, options, product_desc, version_note):
+    def _tex_convert(self, product_desc, version_note, tif_product_repr, queue):
 
-        file_ext = 'tex'
+        tex_product_repr = self._create_product(
+            product_desc, version_note, 'tex')
 
-        product_repr = self._create_product(product_desc, version_note, file_ext)
-        product_repr_dir = product_repr.directory
+        tex_dir = tex_product_repr.directory
+        tif_dir = tif_product_repr.directory
 
-        self.__class__.convert_to_tex(self.session, product_repr_dir)
+        if not os.path.exists(tif_dir):
+            raise EntityError("TIF files must exist prior to TEX conversion.")
 
-        product_repr.area.set_permissions(0660)
+        try:
+            tif_files = [f for f in os.listdir(tif_dir) if f.endswith('.tif')]
+            self.session.mari.app.startProcessing(
+                'Converting existing .tif to .tex', len(tif_files) + 1, True)
+            self.session.mari.app.setProgress(0)
+
+            for (count, tif_file) in enumerate(tif_files):
+                self.session.mari.app.setProgress(count)
+                (file_base, tif_ext) = os.path.splitext(tif_file)
+                tex_file = file_base + '.tex'
+
+                txcmd = 'txmake -mode periodic {tif} {tex}'.format(
+                    tif=os.path.join(tif_dir, tif_file), 
+                    tex=os.path.join(tex_dir, tex_file)
+                )
+
+                os.system(txcmd)
+
+            self.session.mari.app.stopProcessing()
+
+        except Exception as e:
+            self.session.mari.app.stopProcessing()
+            self.session.mari.utils.message("Error with conversion. "
+                "Please make sure folders are chmodded correctly/files exist.")
+
+        tex_product_repr.area.set_permissions(0660)
         
-        return [product_repr]  
+        return [tex_product_repr]  
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -115,61 +155,6 @@ class MapsEntity(Entity):
                     "this entity.")
 
             return export_channels
-
-    # -------------------------------------------------------------------------
-    @classmethod
-    def do_export(cls, session, name, export_path):
-        # mari specific
-        session.mari.history.startMacro('Exporting ' + name + ' Channel')
-
-        try:
-            ch = session.mari.geo.current().channel(name)
-            snapshot = ch.createSnapshot('Backup pre-flattening', name)
-            layer = ch.flatten()
-            imgset = layer.imageSet()
-            imgset.exportImages(export_path)
-
-            session.mari.history.stopMacro()
-
-            ch.revertToSnapshot(snapshot)
-            ch.deleteSnapshot(snapshot)
-
-        except:
-            session.mari.history.stopMacro()
-            session.mari.history.undo()
-            session.mari.utils.message("Error with tif texture export.")
-
-    # -------------------------------------------------------------------------
-    @classmethod
-    def convert_to_tex(cls, session, export_path):
-        tif_dir = export_path.replace('/tex/', '/tif/')
-        if not os.path.exists(tif_dir):
-            raise EntityError("TIF files must exist prior to TEX conversion.")
-
-        i = 1 # processing index
-        try:
-        # read directory of existing 
-            tif_files = [f for f in os.listdir(tif_dir) if f.endswith('.tif')]
-            session.mari.app.startProcessing('Converting existing tif to tex', 
-                len(tif_files) + 1, True)
-            session.mari.app.setProgress(0)
-
-            for tif in tif_files:
-                session.mari.app.setProgress(i)
-                i += 1
-
-                tex = tif.replace('.tif', '.tex')
-                txcmd = 'txmake -mode periodic %s %s' % (os.path.join(tif_dir, tif), 
-                    os.path.join(export_path, tex))
-
-                os.system(txcmd)
-
-            session.mari.app.stopProcessing()
-
-        except:
-            session.mari.app.stopProcessing()
-            session.mari.utils.message("Error with conversion. "
-                "Please make sure folders are chmodded correctly/files exist.")
 
     # -------------------------------------------------------------------------
     @classmethod

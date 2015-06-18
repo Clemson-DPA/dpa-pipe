@@ -13,7 +13,7 @@ class EntityTreeWidget(QtGui.QTreeWidget):
         super(EntityTreeWidget, self).__init__(parent=parent)
 
         self.setAllColumnsShowFocus(True)
-        self.setAlternatingRowColors(True)
+        #self.setAlternatingRowColors(True)
         self.setAnimated(True)
         self.setHeaderLabels(['Entity'])
         self.setRootIsDecorated(False)
