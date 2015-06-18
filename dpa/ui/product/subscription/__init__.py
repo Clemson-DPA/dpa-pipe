@@ -14,7 +14,7 @@ class SubscriptionTreeWidget(QtGui.QTreeWidget):
         super(SubscriptionTreeWidget, self).__init__(parent=parent)
 
         self.setAllColumnsShowFocus(True)
-        self.setAlternatingRowColors(True)
+        #self.setAlternatingRowColors(True)
         self.setAnimated(True)
         self.setHeaderLabels(['Subscriptions', 'Produced by'])
         self.setRootIsDecorated(False)
