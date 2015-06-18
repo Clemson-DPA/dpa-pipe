@@ -20,6 +20,7 @@ class MapsEntity(MayaEntity):
 
         product_name_parts = product.name.split("_")
         maps_type = product_name_parts.pop()
+        obj_name = "_".join(product_name_parts)
 
         # ---- file read node
 
@@ -37,7 +38,7 @@ class MapsEntity(MayaEntity):
         session.cmds.setAttr(file_node + '.fileTextureName', map_path,
             type="string")
         session.cmds.setAttr(file_node + '.filterType', 0)
-        session.cmds.setAttr(file_node + '.colorProfile', 2) 
+        session.cmds.setAttr(file_node + '.colorProfile', 0) 
 
         # add renderman attributes
         add_attr = 'rmanAddAttr {fn} {attr} "";'
@@ -63,11 +64,14 @@ class MapsEntity(MayaEntity):
         session.cmds.setAttr(file_node + '.disableFileLoad',
             kwargs.get('disable_file_load', False))
 
-        # ---- create surface shader 
+        # ---- create surface shader if it doesn't exist
 
         shader_type = 'RMSGPSurface'
-        shader_name = "shader_{pn}".format(pn=product.name)
-        session.cmds.shadingNode(shader_type, asShader=True, name=shader_name)
+        shader_name = "shader_{on}".format(on=obj_name)
+
+        if not session.cmds.ls(shader_name):
+            session.cmds.shadingNode(shader_type, asShader=True,
+                name=shader_name)
 
         # ---- type specific attributes and connections
 
