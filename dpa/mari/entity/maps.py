@@ -56,7 +56,6 @@ class MapsEntity(Entity):
             channel.revertToSnapshot(snapshot)
             channel.deleteSnapshot(snapshot)
         except Exception as e:
-            print "ERROR: " + str(e)
             self.session.mari.history.stopMacro()
             self.session.mari.history.undo()
             self.session.mari.utils.message("Error with tif texture export.")
@@ -84,19 +83,20 @@ class MapsEntity(Entity):
             self.session.mari.app.setProgress(0)
 
             for (count, tif_file) in enumerate(tif_files):
-                self.session.mari.app.setProgress(i)
+                self.session.mari.app.setProgress(count)
                 (file_base, tif_ext) = os.path.splitext(tif_file)
-                tex_file = os.path.join(file_base, '.tex')
+                tex_file = file_base + '.tex'
 
                 txcmd = 'txmake -mode periodic {tif} {tex}'.format(
-                    os.path.join(tif_dir, tif_file), 
-                    os.path.join(tex_dir, tex_file)
+                    tif=os.path.join(tif_dir, tif_file), 
+                    tex=os.path.join(tex_dir, tex_file)
                 )
 
                 os.system(txcmd)
 
             self.session.mari.app.stopProcessing()
-        except:
+
+        except Exception as e:
             self.session.mari.app.stopProcessing()
             self.session.mari.utils.message("Error with conversion. "
                 "Please make sure folders are chmodded correctly/files exist.")
