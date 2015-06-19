@@ -16,7 +16,7 @@ from dpa.user import current_username
 QUEUE = 'cheesyq'
 
 # -----------------------------------------------------------------------------
-def queue_submit_cmd(command, queue_name, output_dir=None):
+def queue_submit_cmd(command, queue_name, output_file=None):
     """Create and submit a shell script with the given command."""
     
     ptask_area = PTaskArea.current()
@@ -37,6 +37,7 @@ def queue_submit_cmd(command, queue_name, output_dir=None):
     with open(script_path, "w") as script_file:
         script_file.write("#!/bin/bash\n")
         script_file.write(command + "\n") 
+        script_file.write("chmod 660 " + output_file + "\n")
 
     os.chmod(script_path, 0770)
 
@@ -49,14 +50,15 @@ def queue_submit_cmd(command, queue_name, output_dir=None):
     render_task = DPACheesyQ.RenderTask()
     render_task.taskid = unique_id
     render_task.logFileName = log_path
-    render_task.outputFileName = output_dir
+    render_task.outputFileName = output_file
 
     data_lib.set(render_task.taskid, render_task)
     render_task.addTask(script_path)
 
-    print "QUEUE NAME: " + str(queue_name)
-    queue_tasks = DPACheesyQTasks.CheesyQTasks(queue_name, "open")
-    queue_tasks.pushTask(render_task.taskid)
+    os.system("cqresubmittask {qn} {tid}".format(
+        qn=queue_name,
+        tid=render_task.taskid
+    ))
         
     print "Submitted task: " + str(render_task.taskid)
 

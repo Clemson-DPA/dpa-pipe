@@ -17,11 +17,12 @@ class MapsEntity(Entity):
     #-------------------------------------------------------------------------
     def export(self, product_desc=None, version_note=None, **kwargs):
         """Export this entity to a product."""
-    
+
         tex_convert = kwargs.get('tex_convert', True)
-        tex_queue = kwargs.get('tex_queue', True)
-        queue_name = kwargs.get('queue_name', None)
-        
+        queue_group = kwargs.get('queue_group', {})
+        tex_queue = queue_group.get('tex_queue', True)
+        queue_name = queue_group.get('queue_name', [None])[0]
+
         tif_product_repr = self._tif_export(product_desc, version_note)
         product_reprs = [tif_product_repr]
 
@@ -90,15 +91,15 @@ class MapsEntity(Entity):
                 (file_base, tif_ext) = os.path.splitext(tif_file)
                 tex_file = file_base + '.tex'
 
+                tif_file = os.path.join(tif_dir, tif_file)
+                tex_file = os.path.join(tex_dir, tex_file)
+
                 txmake = self.session.require_executable('txmake')
                 txcmd = '{txmake} -mode periodic {tif} {tex}'.format(
-                    txmake=txmake,
-                    tif=os.path.join(tif_dir, tif_file), 
-                    tex=os.path.join(tex_dir, tex_file)
-                )
+                    txmake=txmake, tif=tif_file, tex=tex_file)
 
                 if queue:
-                    queue_submit_cmd(txcmd, queue_name, output_dir=tex_dir)
+                    queue_submit_cmd(txcmd, queue_name, output_file=tex_file)
                 else:
                     os.system(txcmd)
 
