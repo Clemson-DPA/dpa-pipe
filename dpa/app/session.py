@@ -1,6 +1,7 @@
 
 from abc import ABCMeta, abstractmethod, abstractproperty
 import importlib
+import os
 import shlex
 import subprocess
 import socket
@@ -9,6 +10,7 @@ import time
 import rpyc
 
 from dpa.app.entity import EntityRegistry
+from dpa.env.vars import DpaVars
 from dpa.ptask.area import PTaskArea
 from dpa.ptask import PTaskError, PTask
 from dpa.singleton import Singleton
@@ -105,6 +107,31 @@ class Session(object):
             )
 
         return _module
+
+    # -------------------------------------------------------------------------
+    def require_executable(self, executable):
+        """Returns the full path for the supplied executable name."""
+
+        (path, file_name) = os.path.split(executable)
+
+        # path already included
+        if path:
+            if not os.path.isfile(executable):
+                raise SessionError("Unable to locate executable: " + executable)
+            elif not os.access(executable, os.X_OK):
+                raise SessionError("File is not executable: " + executable)
+            else:
+                return executable
+        else:
+            bin_paths = DpaVars.path()
+            bin_paths.get()
+            for path in bin_paths.list:
+                executable_path = os.path.join(path, executable)
+                if (os.path.isfile(executable_path) and
+                    os.access(executable_path, os.X_OK)):
+                    return executable_path
+    
+        raise SessionError("Unable to locate executable: " + executable)
 
     # -------------------------------------------------------------------------
     @property

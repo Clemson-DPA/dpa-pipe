@@ -6,6 +6,7 @@ import sys
 from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
 from dpa.app.entity import Entity, EntityRegistry, EntityError
+from dpa.queue import queue_submit_cmd
 
 # -----------------------------------------------------------------------------
 class MapsEntity(Entity):
@@ -16,17 +17,19 @@ class MapsEntity(Entity):
     #-------------------------------------------------------------------------
     def export(self, product_desc=None, version_note=None, **kwargs):
         """Export this entity to a product."""
-    
+
         tex_convert = kwargs.get('tex_convert', True)
-        tex_queue = kwargs.get('tex_queue', True)
-        
+        queue_group = kwargs.get('queue_group', {})
+        tex_queue = queue_group.get('tex_queue', True)
+        queue_name = queue_group.get('queue_name', [None])[0]
+
         tif_product_repr = self._tif_export(product_desc, version_note)
         product_reprs = [tif_product_repr]
 
         if tex_convert:
             product_reprs.extend(
                 self._tex_convert(product_desc, version_note, tif_product_repr, 
-                    tex_queue)
+                    tex_queue, queue_name=queue_name)
             )
 
         return product_reprs
@@ -65,7 +68,8 @@ class MapsEntity(Entity):
         return product_repr  
 
     # -------------------------------------------------------------------------
-    def _tex_convert(self, product_desc, version_note, tif_product_repr, queue):
+    def _tex_convert(self, product_desc, version_note, tif_product_repr, queue,
+        queue_name=None):
 
         tex_product_repr = self._create_product(
             product_desc, version_note, 'tex')
@@ -87,16 +91,23 @@ class MapsEntity(Entity):
                 (file_base, tif_ext) = os.path.splitext(tif_file)
                 tex_file = file_base + '.tex'
 
-                txcmd = 'txmake -mode periodic {tif} {tex}'.format(
-                    tif=os.path.join(tif_dir, tif_file), 
-                    tex=os.path.join(tex_dir, tex_file)
-                )
+                tif_file = os.path.join(tif_dir, tif_file)
+                tex_file = os.path.join(tex_dir, tex_file)
 
-                os.system(txcmd)
+                txmake = self.session.require_executable('txmake')
+                txcmd = '{txmake} -mode periodic {tif} {tex}'.format(
+                    txmake=txmake, tif=tif_file, tex=tex_file)
+
+                if queue:
+                    queue_submit_cmd(txcmd, queue_name, output_file=tex_file)
+                else:
+                    os.system(txcmd)
 
             self.session.mari.app.stopProcessing()
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             self.session.mari.app.stopProcessing()
             self.session.mari.utils.message("Error with conversion. "
                 "Please make sure folders are chmodded correctly/files exist.")
