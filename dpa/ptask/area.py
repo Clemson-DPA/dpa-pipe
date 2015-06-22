@@ -25,6 +25,8 @@ class PTaskArea(object):
     _PTASK_SET_CONFIG = 'config/ptask/set.cfg' 
     _PTASK_TYPE_FILENAME = '.ptask_type'
 
+    _VERSION_SEPARATOR = '@'
+
     # -------------------------------------------------------------------------
     # Class methods:
     # -------------------------------------------------------------------------
@@ -50,8 +52,9 @@ class PTaskArea(object):
     def current(cls):
         env = PTaskEnv.current()  
         spec = PTaskSpec.get(env.ptask_spec.value)
+        version = env.ptask_version.value
         try:
-            return cls(spec, validate=False)
+            return cls(spec, validate=False, version=version)
         except PTaskAreaError:
             return cls("")
 
@@ -59,7 +62,12 @@ class PTaskArea(object):
     @classmethod
     def latest(cls):
         try:
-            return cls(PTaskHistory().latest, validate=False)
+            latest_area_spec = PTaskHistory().latest
+            version = None
+            if PTaskSpec.VERSION in latest_area_spec:
+                (latest_area_spec, version) = latest_area_spec.split(
+                    PTaskSpec.VERSION)
+            return cls(latest_area_spec, validate=False, version=version)
         except PTaskAreaError:
             return cls("")
 
@@ -67,18 +75,31 @@ class PTaskArea(object):
     @classmethod
     def previous(cls):
         try:
-            return cls(PTaskHistory().previous, validate=False)
+            previous_area_spec = PTaskHistory().previous
+            version = None
+            if PTaskSpec.VERSION in previous_area_spec:
+                (previous_area_spec, version) = previous_area_spec.split(
+                    PTaskSpec.VERSION)
+            return cls(previous_area_spec, validate=False, version=version)
         except PTaskAreaError:
             return cls("")
 
     # -------------------------------------------------------------------------
     # Special methods:
     # -------------------------------------------------------------------------
-    def __init__(self, spec, validate=True):
+    def __init__(self, spec, validate=True, version=None):
         super(PTaskArea, self).__init__()
 
         # should be a fully qualified ptask spec
         if not isinstance(spec, PTaskSpec):
+            spec = PTaskSpec.get(spec)
+
+        ver_sep = PTaskSpec.VERSION
+
+        if ver_sep in spec:
+            if spec.count(ver_sep) > 1:
+                raise PTaskAreaError("Multiple version specs unsupported.")
+            (spec, version) = spec.split(ver_sep)
             spec = PTaskSpec.get(spec)
 
         # XXX this is making assumptions about a 1:1 correspondence
@@ -88,11 +109,21 @@ class PTaskArea(object):
         # is isolated to this class and the API should remain the same. 
 
         self._spec = spec
+        self._version = version
         self._base_spec = spec.base_spec
         self._product_spec = spec.product_spec
+
+        if self._version and self._product_spec:
+            raise PTaskAreaError(
+                "PTask version not supported with product area initialization.")
+
         self._fs_root = DpaVars.filesystem_root().get()
         self._root = DpaVars.projects_root().get()
         self._base = os.path.join(*spec.split(PTaskSpec.SEPARATOR))
+
+        if self._version:
+            self._base = os.path.join(self._base, '.' + str(version).zfill(4))
+
         self._path = os.path.join(self._root, self._base)
         self._ancestor_paths = None
 
@@ -179,6 +210,8 @@ class PTaskArea(object):
             dir_path = self.path
         
         if version:
+            if self.version:
+                raise PTaskAreaError("PTask area already a version area.")
             dir_path = os.path.join(dir_path, '.' + str(version).zfill(4))
 
         if dir_name:
@@ -195,6 +228,10 @@ class PTaskArea(object):
     # -------------------------------------------------------------------------
     def dirs(self, path=False, children=False, product_dirs=False):
         """A list of directories in the area."""
+
+        if self.version and product_dirs:
+            raise PTaskAreaError(
+                "Cannot retrieve product dirs for ptask version area.")
 
         dirs = []
         products_dir = os.path.join(os.path.sep, PTaskSpec.PRODUCT_SEPARATOR)
@@ -285,7 +322,11 @@ class PTaskArea(object):
 
         # add this spec to the history
         if ptask:
-            PTaskHistory().add(self.spec)
+            if self.version: 
+                spec = self.spec + PTaskSpec.VERSION + self.version
+                PTaskHistory().add(spec)
+            else:
+                PTaskHistory().add(self.spec)
 
         # set the shell prompt if preferred
         if shell:
@@ -355,6 +396,11 @@ class PTaskArea(object):
             env.ptask_spec.value = self.spec
             env.ptask_path.value = self.path
 
+            if self.version:
+                env.ptask_version.value = str(self.version).zfill(4)
+            else:
+                env.ptask_version.value = ""
+
             ancestor_paths = self.ancestor_paths()
 
             # pythonpath
@@ -385,6 +431,11 @@ class PTaskArea(object):
     @property
     def spec(self):
         return self._spec
+
+    # -------------------------------------------------------------------------
+    @property
+    def version(self):
+        return self._version
 
     # -------------------------------------------------------------------------
     # Private instance methods

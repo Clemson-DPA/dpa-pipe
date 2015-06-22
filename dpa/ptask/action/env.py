@@ -49,10 +49,16 @@ class PTaskEnvAction(Action):
             help="Choose a previous ptask env."
         )
 
+        parser.add_argument(
+            "-v", "--version", 
+            type=int,
+            help="The version of the ptask to print info for."
+        )
+
     # -------------------------------------------------------------------------
     # Special methods:
     # -------------------------------------------------------------------------
-    def __init__(self, spec, shell, previous=None):
+    def __init__(self, spec, shell, previous=None, version=None):
 
         super(PTaskEnvAction, self).__init__(
             spec, 
@@ -63,6 +69,7 @@ class PTaskEnvAction(Action):
         self._spec = spec
         self._shell = ShellFormatters.get(shell)
         self._previous = previous
+        self._version = version
 
     # -------------------------------------------------------------------------
     # Methods:
@@ -103,6 +110,11 @@ class PTaskEnvAction(Action):
     @property
     def previous(self):
         return self._previous
+
+    # -------------------------------------------------------------------------
+    @property
+    def version(self):
+        return self._version
 
     # -------------------------------------------------------------------------
     # Private methods
@@ -147,6 +159,10 @@ class PTaskEnvAction(Action):
         # remove any whitespace on the head/tail of the spec
         spec = self.spec.strip()
         ptask_area = None
+
+        if self.version:
+            spec = PTaskSpec.VERSION.join([spec, str(self.version)])
+            
 
         replace_match = re.match("\.?/([=\w]+)/([=\w]+)/", spec)
 
