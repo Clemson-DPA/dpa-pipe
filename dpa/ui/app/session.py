@@ -8,13 +8,16 @@ from dpa.ui.action.options import ActionOptionWidget
 class SessionDialog(QtGui.QDialog):
 
     # -------------------------------------------------------------------------
-    def __init__(self):
+    def __init__(self, parent=None):
 
         self._session = SessionRegistry().current()
         if not self._session:
             raise SessionError("Unable to determine current app session.")
 
-        super(SessionDialog, self).__init__(self._session.main_window)
+        if not parent:
+            parent = self._session.main_window
+
+        super(SessionDialog, self).__init__(parent=parent)
         
     # -------------------------------------------------------------------------
     @property

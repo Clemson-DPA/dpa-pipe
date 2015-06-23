@@ -14,13 +14,20 @@ class DarkKnightDialog(SessionDialog):
 
         super(DarkKnightDialog, self).__init__(parent=parent)
 
+        self.setWindowTitle("TDK")
+
+        icon_lbl = QtGui.QLabel()
+        icon_lbl.setPixmap(QtGui.QPixmap(
+            IconFactory().disk_path("icon:///images/logos/dk.png")))
+
+        test_btn = QtGui.QPushButton("TEST")
+
         main_layout = QtGui.QGridLayout(self)
         main_layout.setSpacing(4)
         main_layout.setContentsMargins(4, 4, 4, 4)
-
-        icon_lbl = QtGui.QLabel()
-        icon_lbl.setPixmap(
-            QtGui.QPixmap(IconFactory.disk_path("icon:///images/logos/dk.png")))
+        main_layout.addWidget(icon_lbl, 0, 0, 1, 2,
+            QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
+        main_layout.addWidget(test_btn, 1, 0, 1, 2)
 
         # XXX dark knight logo here...
 
