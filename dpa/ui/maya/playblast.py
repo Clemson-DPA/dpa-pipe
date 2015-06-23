@@ -91,8 +91,10 @@ def playblaster(quality, sequence, autoReview):
         print "You need to dpaset into a ptask to use this tool."
         return False
     currentCam = cmds.modelPanel(cmds.getPanel(wf=True), q=True, cam=True)
+    currentCamMunged = currentCam.replace( '|', '_' )
     focalLength = cmds.camera(currentCam, q=True, fl=True)
-    cameraName = currentCam.title() + "Fov" + str(focalLength)
+    cameraName = currentCamMunged.title() + "Fov" + str(focalLength)
+    print "Camera Name: " + cameraName
     specName = spec.name(spec).title()
 
     if not autoReview:
