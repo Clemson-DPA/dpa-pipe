@@ -26,6 +26,7 @@ class PTaskSpec(str):
     ROOT = '^' 
     SEPARATOR = '='
     WILDCARD = '%'
+    VERSION = '@'
 
     # separates the ptask spec from an additional product specification. the
     # additional product spec will be stored as a property on the spec object.

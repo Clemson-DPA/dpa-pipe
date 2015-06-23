@@ -212,23 +212,34 @@ class SubscriptionUpdateAction(Action):
                 update_map[sub.id]['note'] = 'Official version'
                 continue 
 
-            all_vers = [v for v in sub_product.versions if v.published]
+            if sub.product_version.product.ptask.spec == self.ptask.spec:
+                all_vers = [v for v in sub_product.versions]
+            else:
+                all_vers = [v for v in sub_product.versions if v.published]
+
             all_vers.sort(key=lambda v: v.number_padded)
 
             if all_vers:
-                latest_pub = all_vers[-1]
-                if latest_pub.number > sub_product_ver.number:
-                    update_map[sub.id]['new'] = latest_pub 
-                    update_map[sub.id]['note'] = 'Latest published version'
+                latest = all_vers[-1]
+                if latest.number > sub_product_ver.number:
+                    update_map[sub.id]['new'] = latest 
+                    if latest.published:
+                        update_map[sub.id]['note'] = 'Latest published version'
+                    else:
+                        update_map[sub.id]['note'] = 'Latest version'
                     continue 
                 else:
                     update_map[sub.id]['new'] = None
-                    update_map[sub.id]['note'] = 'Already using latest published'
+                    if sub_product_ver.published:
+                        update_map[sub.id]['note'] = \
+                            'Already using latest published'
+                    else:
+                        update_map[sub.id]['note'] = 'Already using latest'
                     continue 
                     
             else:
                 update_map[sub.id]['new'] = None
-                update_map[sub.id]['note'] = 'No new published versions'
+                update_map[sub.id]['note'] = 'No new versions'
                 continue 
 
         self._update_map = update_map

@@ -79,6 +79,8 @@ class MariSession(RemoteMixin, Session):
         
         if project: 
             if archive:
+
+                project_name = project.name()
                 project.save(force_save=True)
                 project.close(confirm_if_modified=False)
 
@@ -87,14 +89,18 @@ class MariSession(RemoteMixin, Session):
                         raise SessionError(
                             "Cannot save '{f}'. File exists.".format(f=file_path))
                 else:
-                    # find...a file path...I guess? this need re-eval! thanks!
-                    ptask_dir = self.ptask_area.dir()
-                    file_path = os.path.join(ptask_dir, self.app_name,
-                        self.ptask.name) + '.mra'
+                    # make sure the mari directory exists
+                    self.ptask_area.provision('mari')
+                    
+                    # build a path to the file
+                    file_path = os.path.join(
+                        self.ptask_area.dir(dir_name='mari'),
+                        project_name + '.mra'
+                    )
 
-                self.mari.projects.archive(uuid,file_path)
+                self.mari.projects.archive(uuid, file_path)
 
-                if not file_path:
+                if file_path:
                     os.chmod(file_path, 0770)
             else:
                 project.save(force_save=True)

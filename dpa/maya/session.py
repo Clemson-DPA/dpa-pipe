@@ -72,6 +72,19 @@ class MayaSession(RemoteMixin, Session):
             raise SessionError(str(e))
 
     # -------------------------------------------------------------------------
+    def require_plugin(self, plugin_name):
+        
+        # ensure abc plugin in is loaded
+        if not self.cmds.pluginInfo(
+            plugin_name, query=True, loaded=True):
+
+            # load the plugin
+            self.cmds.loadPlugin(plugin_name)
+            if not self.cmds.pluginInfo(
+                plugin_name, query=True, loaded=True):
+                raise SessionError("Unable to load plugin: " + plugin_name)
+
+    # -------------------------------------------------------------------------
     def save(self, file_path=None, bake_references=False, overwrite=False):
 
         if bake_references:

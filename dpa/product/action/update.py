@@ -11,7 +11,7 @@ from dpa.user import User
 
 # -----------------------------------------------------------------------------
 
-LATEST_VERSION = -1
+LATEST_VERSION = "-1"
 
 # -----------------------------------------------------------------------------
 class ProductUpdateAction(Action):
@@ -36,21 +36,21 @@ class ProductUpdateAction(Action):
         parser.add_argument(
             "-p", "--publish",
             nargs='?',
-            const=[LATEST_VERSION],
+            const=LATEST_VERSION,
             default=None,
-            metavar="version(s)",
-            type=int,
-            help="Publish version(s) of this product.",
+            metavar="<v>,<v>,<v>...",
+            type=str,
+            help="Publish version(s) of this product. Default is latest.",
         )
 
         parser.add_argument(
             "-u", "--unpublish",
             nargs='?',
-            const=[LATEST_VERSION],
+            const=LATEST_VERSION,
             default=None,
-            metavar="version(s)",
-            type=int,
-            help="Unpublish version(s) of this product.",
+            metavar="<v>,<v>,<v>...",
+            type=str,
+            help="Unpublish version(s) of this product. Default is latest.",
         )
 
         # ---- publish/unpublish
@@ -58,21 +58,21 @@ class ProductUpdateAction(Action):
         parser.add_argument(
             "-d", "--deprecate",
             nargs='?',
-            const=[LATEST_VERSION],
+            const=LATEST_VERSION,
             default=None,
-            metavar="version(s)",
-            type=int,
-            help="Deprecate version(s) of this product.",
+            metavar="<v>,<v>,<v>...",
+            type=str,
+            help="Deprecate version(s) of this product. Default is latest.",
         )
 
         parser.add_argument(
             "--undeprecate",
             nargs='?',
-            const=[LATEST_VERSION],
+            const=LATEST_VERSION,
             default=None,
-            metavar="version(s)",
-            type=int,
-            help="Undeprecate version(s) of this product.",
+            metavar="<v>,<v>,<v>...",
+            type=str,
+            help="Undeprecate version(s) of this product. Default is latest.",
         )
 
         # ---- official/no official
@@ -83,10 +83,10 @@ class ProductUpdateAction(Action):
             "-o", "--official",
             nargs='?',
             default=None,
-            const=[LATEST_VERSION],
-            metavar="version",
-            type=int,
-            help="Official a version of this product.",
+            const=LATEST_VERSION,
+            metavar="<v>",
+            type=str,
+            help="Official a version of this product. Default is latest.",
         )
 
         official_group.add_argument(
@@ -98,7 +98,6 @@ class ProductUpdateAction(Action):
     # -------------------------------------------------------------------------
     def __init__(self, spec, publish=None, unpublish=None, official=None, 
         noofficial=None, deprecate=None, undeprecate=None):
-
 
         super(ProductUpdateAction, self).__init__(spec, publish=publish, 
             unpublish=unpublish, official=official, noofficial=noofficial,
@@ -314,6 +313,10 @@ class ProductUpdateAction(Action):
     # -------------------------------------------------------------------------
     def verify(self):
 
+        if (not self.publish and not self.unpublish and not self.deprecate and
+            not self.undeprecate and not self.official and not self.noofficial):
+            raise ActionAborted("No updates to perform.")
+
         print "\nProduct: {b}{s}{n}\n".format(
             b=Style.bright,
             s=self.product.spec,
@@ -387,7 +390,7 @@ class ProductUpdateAction(Action):
         product_vers = None
 
         versions = []
-        for num in nums:
+        for num in nums.split(","):
             if num is LATEST_VERSION:
 
                 if not product_vers:

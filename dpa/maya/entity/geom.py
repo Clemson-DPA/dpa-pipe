@@ -30,14 +30,7 @@ class GeomEntity(SetBasedEntity):
     # -------------------------------------------------------------------------
     def _obj_export(self, options, product_desc, version_note):
 
-        # ensure obj plugin in is loaded
-        if not self.session.cmds.pluginInfo(
-            'objExport', query=True, loaded=True):
-            raise EntityError(
-                "Unable to export '{pn}'. " + \
-                "Maya objExport plugin not loaded!".format(
-                    pn=self.product_name)
-            )
+        self.session.require_plugin('objExport')
 
         file_ext = 'obj'
 

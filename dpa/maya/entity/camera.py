@@ -47,13 +47,7 @@ class CameraEntity(SetBasedWorkfileEntity):
     # -------------------------------------------------------------------------
     def _fbx_export(self, options, product_desc, version_note):
 
-        # ensure fbx plugin in is loaded
-        if not self.session.cmds.pluginInfo(
-            'fbxmaya', query=True, loaded=True):
-            raise EntityError(
-                "Unable to export '{pn}'. Maya fbx plugin not loaded!".format(
-                    pn=self.product_name)
-            )
+        self.session.require_plugin('fbxmaya')
 
         file_type = 'fbx'
 

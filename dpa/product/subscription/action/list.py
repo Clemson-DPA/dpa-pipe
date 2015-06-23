@@ -1,5 +1,6 @@
 
 from dpa.action import Action, ActionError
+from dpa.env.vars import DpaVars
 from dpa.shell.output import Output, Style
 from dpa.ptask import PTask, PTaskError
 from dpa.ptask.area import PTaskArea
@@ -30,9 +31,9 @@ class SubscriptionListAction(Action):
             "-v", "--versions",
             dest="versions",
             nargs="*",
-            default=["latest"],
+            default=[],
             help="Show subscriptions for the supplied verisons. Default " + \
-                 "is 'latest'. A list of integers can be supplied for " + \
+                 "is current. A list of integers can be supplied for " + \
                  "specific versions, or 'all' for all versions."
         )
 
@@ -73,6 +74,13 @@ class SubscriptionListAction(Action):
 
     # -------------------------------------------------------------------------
     def validate(self):
+
+        if not self.spec and not self._versions:
+            ptask_ver = DpaVars.ptask_version().get()
+            if ptask_ver:
+                self._versions = [ptask_ver]
+            else:
+                self._versions = ["latest"]
         
         cur_spec = PTaskArea.current().spec
         full_spec = PTaskSpec.get(self.spec, relative_to=cur_spec)
@@ -97,8 +105,9 @@ class SubscriptionListAction(Action):
         elif self._versions == ['all']:
             versions = self.ptask.versions
         else:
+            self._versions = map(int, self._versions)
             versions = [v for v in self.ptask.versions 
-                if str(v.number) in self._versions]
+                if v.number in self._versions]
 
         if len(versions) == 0:
             raise ActionError(

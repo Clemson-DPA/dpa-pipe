@@ -13,8 +13,11 @@ RestfulClient
  
 from collections import defaultdict
 
+import errno
 import json
 import requests
+from requests.exceptions import ConnectionError
+import select
 import yaml
 
 # -----------------------------------------------------------------------------
@@ -70,7 +73,9 @@ class RestfulClient(object):
 
         return self.execute_request_url(http_method, url, data, params, headers)
 
-    def execute_request_url(self, http_method, url, data=None, params=None, headers=None):
+    # -------------------------------------------------------------------------
+    def execute_request_url(self, http_method, url, data=None, params=None,
+        headers=None):
 
         data_format = self.data_format
 
@@ -98,8 +103,8 @@ class RestfulClient(object):
                 "Unknown method for requests: " + str(requests_method_name))
 
         # execute the request
-        response = requests_method(url, params=params, data=data,
-            headers=headers)
+        response = self._try_request(requests_method, url, params=params,
+            data=data, headers=headers)
 
         # raise a custom exception if 400/500 error
         try:
@@ -118,6 +123,23 @@ class RestfulClient(object):
 
     # -------------------------------------------------------------------------
     # Private class methods:
+    # -------------------------------------------------------------------------
+    def _try_request(self, requests_method, url, params=None, data=None,
+        headers=None):
+
+        # I believe this was fixed with python 2.7, but we have dcc sw that
+        # still runs embedded 2.6. So we check for EINTR and retry. 
+
+        while True:
+            try:
+                return requests_method(url, params=params, data=data,
+                    headers=headers)
+            except ConnectionError as e:
+                actual_error = e.args[0][1] 
+                if (not isinstance(actual_error, IOError) or 
+                    actual_error.errno != errno.EINTR):
+                    raise
+
     # -------------------------------------------------------------------------
     def _get_url(self, action, data_type, primary_key=None):
 

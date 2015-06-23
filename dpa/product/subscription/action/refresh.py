@@ -3,6 +3,7 @@ import os
 import shutil
 
 from dpa.action import Action, ActionError, ActionAborted
+from dpa.env.vars import DpaVars
 from dpa.ptask import PTask, PTaskError
 from dpa.ptask.area import PTaskArea, PTaskAreaError
 from dpa.ptask.spec import PTaskSpec
@@ -28,11 +29,17 @@ class SubscriptionRefreshAction(Action):
             help="The ptask to reload."
         )
 
-    # -------------------------------------------------------------------------
-    def __init__(self, ptask):
+        parser.add_argument(
+            "-v", "--version",
+            help="The version of the ptask to refresh subs for.",
+        )
 
-        super(SubscriptionRefreshAction, self).__init__(ptask)
+    # -------------------------------------------------------------------------
+    def __init__(self, ptask, version=None):
+
+        super(SubscriptionRefreshAction, self).__init__(ptask, version=None)
         self._ptask = ptask
+        self._version = None
 
     # -------------------------------------------------------------------------
     def execute(self):
@@ -79,8 +86,13 @@ class SubscriptionRefreshAction(Action):
 
     # -------------------------------------------------------------------------
     def validate(self):
+        
+        use_cur_version = False
 
         if not isinstance(self.ptask, PTask):
+
+            if not self.ptask or self.ptask == '.':
+                use_cur_version = True
 
             cur_spec = PTaskArea.current().spec
             full_spec = PTaskSpec.get(self.ptask, relative_to=cur_spec)
@@ -100,7 +112,17 @@ class SubscriptionRefreshAction(Action):
 
             self._ptask = ptask
 
-        self._ptask_version = self.ptask.latest_version
+        latest_ver = self.ptask.latest_version
+
+        if use_cur_version:
+            cur_ptask_ver = DpaVars.ptask_version().get()
+            if cur_ptask_ver and cur_ptask_ver != latest_ver.number:
+                self._ptask_version = self.ptask.version(cur_ptask_ver)
+                self._version = cur_ptask_ver
+            else:
+                self._ptask_version = self.ptask.latest_version
+        else:
+            self._ptask_version = self.ptask.latest_version
 
     # -------------------------------------------------------------------------
     def verify(self):
@@ -122,9 +144,14 @@ class SubscriptionRefreshAction(Action):
         return self._ptask_version
 
     # -------------------------------------------------------------------------
+    @property
+    def version(self):
+        return self._version
+
+    # -------------------------------------------------------------------------
     def _prep_import_dir(self):
 
-        area = PTaskArea(self.ptask.spec)
+        area = PTaskArea(self.ptask.spec, version=self.version)
         import_dir = area.dir(dir_name="import", verify=False, path=True)
 
         if os.path.exists(import_dir):
@@ -149,7 +176,7 @@ class SubscriptionRefreshAction(Action):
     # -------------------------------------------------------------------------
     def _link_sub(self, sub, app):
 
-        area = PTaskArea(self.ptask.spec)
+        area = PTaskArea(self.ptask.spec, version=self.version)
 
         product_ver = sub.product_version
 

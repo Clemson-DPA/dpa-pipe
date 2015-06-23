@@ -13,17 +13,14 @@ class MapsEntity(MayaEntity):
         **kwargs):
         """Import maps into the session."""
 
-        if not session.cmds.pluginInfo('RenderMan_for_Maya', query=True,
-            loaded=True):
-
-            # load the plugin
-            session.cmds.loadPlugin('RenderMan_for_Maya')
+        session.require_plugin('RenderMan_for_Maya')
 
         product_version = representation.product_version
         product = product_version.product
 
         product_name_parts = product.name.split("_")
         maps_type = product_name_parts.pop()
+        obj_name = "_".join(product_name_parts)
 
         # ---- file read node
 
@@ -32,13 +29,16 @@ class MapsEntity(MayaEntity):
             name=file_node_name)
 
         # set UDIM/ATLAS support to mari
+        current_file = session.cmds.file(q=True, sceneName=True)
         import_base = cls.get_import_file_common_base(session, 
-            product.name, product.category, representation)
+            product.name, product.category, representation,
+            relative_to=current_file
+        )
         map_path = import_base + '._MAPID_.' + representation.type
         session.cmds.setAttr(file_node + '.fileTextureName', map_path,
             type="string")
         session.cmds.setAttr(file_node + '.filterType', 0)
-        session.cmds.setAttr(file_node + '.colorProfile', 2) 
+        session.cmds.setAttr(file_node + '.colorProfile', 0) 
 
         # add renderman attributes
         add_attr = 'rmanAddAttr {fn} {attr} "";'
@@ -64,11 +64,14 @@ class MapsEntity(MayaEntity):
         session.cmds.setAttr(file_node + '.disableFileLoad',
             kwargs.get('disable_file_load', False))
 
-        # ---- create surface shader 
+        # ---- create surface shader if it doesn't exist
 
         shader_type = 'RMSGPSurface'
-        shader_name = "shader_{pn}".format(pn=product.name)
-        session.cmds.shadingNode(shader_type, asShader=True, name=shader_name)
+        shader_name = "shader_{on}".format(on=obj_name)
+
+        if not session.cmds.ls(shader_name):
+            session.cmds.shadingNode(shader_type, asShader=True,
+                name=shader_name)
 
         # ---- type specific attributes and connections
 
