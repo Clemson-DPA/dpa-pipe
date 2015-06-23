@@ -151,6 +151,15 @@ class DpaVars(object):
 
     """
 
+    ptask_version= staticmethod(
+        lambda default="": EnvVar('DPA_PTASK_VERSION', default)
+    )
+    """Returns an instance of :py:obj:`dpa.env.EnvVar` for ``$DPA_PTASK_VERSION``
+
+    Used to identify the version of the currently set ptask.
+
+    """
+    
     ptask_path = staticmethod(
         lambda default="": EnvVar('DPA_PTASK_PATH', default)
     )

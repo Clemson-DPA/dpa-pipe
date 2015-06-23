@@ -38,3 +38,5 @@ class PTaskEnv(Env):
 
         self.add(DpaVars.ptask_path(), name='ptask_path')
 
+        self.add(DpaVars.ptask_version(), name='ptask_version')
+
