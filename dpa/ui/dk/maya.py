@@ -14,6 +14,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         layout = QtGui.QGridLayout()
         
         
+        
         # XXX info about ptask, version, etc.
         # XXX separate render layers
         # XXX file format (only exr for now)

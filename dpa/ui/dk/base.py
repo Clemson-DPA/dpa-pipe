@@ -3,6 +3,8 @@
 
 from PySide import QtCore, QtGui
 
+from dpa.ptask.area import PTaskArea
+from dpa.ptask import PTask
 from dpa.ui.app.session import SessionDialog
 from dpa.ui.icon.factory import IconFactory
 
@@ -50,6 +52,14 @@ class BaseDarkKnightDialog(SessionDialog):
         
         controls_layout = self._setup_controls()
 
+        controls_widget = QtGui.QWidget()
+        controls_widget.setLayout(controls_layout)
+
+        scroll_area = QtGui.QScrollArea()
+        scroll_area.setFocusPolicy(QtCore.Qt.NoFocus)
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(controls_widget)
+
         submit_btn = QtGui.QPushButton("Submit")
         submit_btn.clicked.connect(self._submit)
         
@@ -57,10 +67,71 @@ class BaseDarkKnightDialog(SessionDialog):
         main_layout.setSpacing(4)
         main_layout.setContentsMargins(4, 4, 4, 4)
         main_layout.addWidget(logo_btn)
-        main_layout.addLayout(controls_layout)
-        main_layout.addWidget(self._separator())
+        main_layout.addLayout(self._output_options())
+        main_layout.addWidget(scroll_area)
         main_layout.addWidget(submit_btn)
-        main_layout.addStretch()
+
+    # -------------------------------------------------------------------------
+    def _output_options(self):
+
+        output_type_lbl = QtGui.QLabel("Output location:")
+        output_type = QtGui.QComboBox()
+        output_type.addItems(['Automatic', 'Manual'])
+
+        header_layout = QtGui.QHBoxLayout()
+        header_layout.setSpacing(4)
+        header_layout.setContentsMargins(4, 4, 4, 4)
+        header_layout.addStretch()
+        header_layout.addWidget(output_type_lbl)
+        header_layout.addWidget(output_type)
+        header_layout.addStretch()
+
+        # ---- auto
+
+        cur_area = PTaskArea.current()
+        cur_ptask = PTask.get(cur_area.spec)
+        if cur_ptask:
+            version = cur_area.version or cur_ptask.latest_version.number
+        else:
+            cur_ptask = None
+            version = "None"
+
+        ptask_lbl = QtGui.QLabel("PTask:")
+        ptask = QtGui.QLabel("<B>" + str(cur_ptask) + "</B>")
+
+        version_lbl = QtGui.QLabel("Version:")
+        version = QtGui.QLabel("<B>" + str(version) + "</B>")
+
+
+        auto_layout = QtGui.QGridLayout()
+        auto_layout.setSpacing(4)
+        auto_layout.setContentsMargins(4, 4, 4, 4)
+        auto_layout.addWidget(ptask_lbl, 0, 0, QtCore.Qt.AlignRight)
+        auto_layout.addWidget(ptask, 0, 1, QtCore.Qt.AlignLeft)
+        auto_layout.addWidget(version_lbl, 1, 0, QtCore.Qt.AlignRight)
+        auto_layout.addWidget(version, 1, 1, QtCore.Qt.AlignLeft)
+        auto_layout.setColumnStretch(0, 0)
+        auto_layout.setColumnStretch(1, 1000)
+
+        auto_widgets = QtGui.QWidget()
+        auto_widgets.setLayout(auto_layout)
+
+        # version
+
+        # ---- manual
+
+        # directory
+
+        # ---- layout
+
+        output_layout = QtGui.QVBoxLayout()
+        output_layout.setSpacing(4)
+        output_layout.setContentsMargins(4, 4, 4, 4)
+        output_layout.addLayout(header_layout)
+        output_layout.addLayout(auto_layout)
+
+        return output_layout 
+
 
     # -------------------------------------------------------------------------
     def _separator(self):
