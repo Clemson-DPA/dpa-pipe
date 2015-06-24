@@ -47,7 +47,7 @@ class DpaVars(object):
     """
 
     ld_library_path_base = staticmethod(
-        lambda default="": PathVar('DPA_BASE_LD_LIRARY_PATH', default)
+        lambda default="": PathVar('DPA_BASE_LD_LIBRARY_PATH', default)
     )
     """Returns an instance of :py:obj:`dpa.env.PathVar` for ``$DPA_BASE_LD_LIBRARY_PATH``
 
