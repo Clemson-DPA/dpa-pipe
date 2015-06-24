@@ -80,7 +80,7 @@ class EntityExportWizard(QtGui.QWizard):
                     version_note=self._note_edit.text(),
                     **option_widget.value
                 )
-            except EntityError as e:
+            except Exception as e:
                 errors.append(e)
             else:
                 # XXX should use product update action
@@ -103,8 +103,10 @@ class EntityExportWizard(QtGui.QWizard):
 
                 try:
                     version_action()
-                except ActionError as e:
+                except Exception as e:
                     errors.append("Unable to version up: "  + str(e))
+
+        self.setEnabled(True)
 
         if errors:
             error_dialog = QtGui.QErrorMessage(self)
@@ -113,8 +115,8 @@ class EntityExportWizard(QtGui.QWizard):
                 "There were errors during export:<br><br>" + \
                 "<br>".join([str(e) for e in errors])
             )
-
-        super(EntityExportWizard, self).accept()
+        else:
+            super(EntityExportWizard, self).accept()
 
     # -------------------------------------------------------------------------
     def showEvent(self, event):
