@@ -13,7 +13,7 @@ from dpa.location import current_location_code
 from dpa.logging import Logger
 from dpa.ptask.env import PTaskEnv
 from dpa.ptask.history import PTaskHistory
-from dpa.ptask.spec import PTaskSpec
+from dpa.ptask.spec import PTaskSpec, PTaskSpecError
 from dpa.shell.output import Style, Bg, Fg
 
 # -----------------------------------------------------------------------------
@@ -57,6 +57,17 @@ class PTaskArea(object):
             return cls(spec, validate=False, version=version)
         except PTaskAreaError:
             return cls("")
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def from_directory(cls, directory, validate=True, version=None):
+
+        try:
+            spec = PTaskSpec.from_directory(directory)
+        except PTaskSpecError as e:
+            raise PTaskAreaError("Unable to determine spec from directory.")
+
+        return cls(spec, validate=validate, version=version) 
 
     # -------------------------------------------------------------------------
     @classmethod

@@ -6,6 +6,8 @@
 import os.path
 import re
 
+from dpa.env.vars import DpaVars
+
 # -----------------------------------------------------------------------------
 # Globals:
 # -----------------------------------------------------------------------------
@@ -42,6 +44,20 @@ class PTaskSpec(str):
 
     # -------------------------------------------------------------------------
     # Class methods:
+    # -------------------------------------------------------------------------
+    @classmethod
+    def from_directory(cls, directory):
+        """Determine a spec from a local directory."""
+
+        projects_root = DpaVars.projects_root().get()
+
+        spec = directory.strip()
+        spec = spec.replace(projects_root, "")
+        spec = spec.replace(os.path.sep, cls.SEPARATOR)
+        spec = spec.strip(cls.SEPARATOR)
+
+        return spec
+
     # -------------------------------------------------------------------------
     @classmethod
     def get(cls, in_str, relative_to=None):
