@@ -75,7 +75,7 @@ class SubscriptionListAction(Action):
     # -------------------------------------------------------------------------
     def validate(self):
 
-        if not self.spec and not self._versions:
+        if self.spec and not self._versions:
             ptask_ver = DpaVars.ptask_version().get()
             if ptask_ver:
                 self._versions = [ptask_ver]
@@ -113,7 +113,7 @@ class SubscriptionListAction(Action):
             raise ActionError(
                 "No matches found for {p} version: {v}".format(
                     p=ptask.spec,
-                    v=Style.bright + self._versions + Style.normal,
+                    v=Style.bright + str(self._versions) + Style.normal,
                 )
             )
 

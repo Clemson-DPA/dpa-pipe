@@ -26,8 +26,11 @@ class GeomcacheEntity(SetBasedEntity):
 
     # -------------------------------------------------------------------------
     def export(self, product_desc=None, version_note=None, fbx_export=False,
-        fbx_options=None, abc_export=False, abc_options=None):
+        abc_export=False, **kwargs):
         """Export this entity to a product."""
+
+        abc_options = kwargs.pop('abc_options', {})
+        fbx_options = kwargs.pop('fbx_options', {})
 
         product_reprs = []
 
@@ -63,11 +66,25 @@ class GeomcacheEntity(SetBasedEntity):
             dag_path = self.session.cmds.ls(export_obj, l=True)[0]
             export_roots += "-root " + dag_path + " "
 
+        uv_write = options.pop('uv_write', True)
+        if uv_write:
+            uv_write_flag = "-uvWrite"
+        else:
+            uv_write_flag = ""
+
+        world_space = options.pop('world_space', True)
+        if world_space:
+            world_space_flag = "-worldSpace"
+        else:   
+            world_space_flag = ""
+
         frame_start = self.session.cmds.playbackOptions(query=True, minTime=True)
         frame_end = self.session.cmds.playbackOptions(query=True, maxTime=True)
 
-        cmd = 'AbcExport -j "{roots} -fr {fs} {fe} -file {path}"'.format(
-            roots=export_roots, fs=frame_start, fe=frame_end, path=export_path)
+        cmd = 'AbcExport -j "{roots} {uw} {ws} -fr {fs} {fe} -file {path}"'.\
+            format(roots=export_roots, fs=frame_start, fe=frame_end,
+                path=export_path, uw=uv_write_flag, ws=world_space_flag,
+            )
 
         self.session.mel.eval(cmd)
 

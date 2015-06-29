@@ -17,8 +17,13 @@ class MayaEntity(Entity):
 
         session_file_path = session.cmds.file(q=True, sceneName=True)
 
+        if relative:
+            relative_to = os.path.dirname(session_file_path)
+        else:
+            relative_to = None
+
         return super(MayaEntity, cls).get_import_file(session, name, category, 
-            representation, relative_to=os.path.dirname(session_file_path))
+            representation, relative_to=relative_to)
 
     # -------------------------------------------------------------------------
     @classmethod
@@ -27,6 +32,8 @@ class MayaEntity(Entity):
         # XXX
         product = representation.product_version.product
 
+        merge_under_selection = kwargs.pop('merge_under_selection', True)
+
         # AbcImport, for some ridiculous reason, treats imports as being 
         # relative to the project rather than the actual file that you're 
         # working in. This may bite us depending on how alembics are loaded
@@ -34,7 +41,13 @@ class MayaEntity(Entity):
         # path.
         abc_file = cls.get_import_file(session, product.name, 
             product.category, representation, relative=False)
-        session.mel.eval('AbcImport -m "import" "{path}"'.format(path=abc_file))
+    
+        if merge_under_selection:
+            session.mel.eval('AbcImport -m "import" -connect "/" "{path}"'.\
+                format(path=abc_file))
+        else:
+            session.mel.eval('AbcImport -m "import" "{path}"'.format(
+                path=abc_file))
 
     # -------------------------------------------------------------------------
     @classmethod
