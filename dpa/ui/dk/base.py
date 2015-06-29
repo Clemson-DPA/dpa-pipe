@@ -1,6 +1,8 @@
 
 # -----------------------------------------------------------------------------
 
+import os
+
 from PySide import QtCore, QtGui
 
 from dpa.ptask.area import PTaskArea
@@ -17,9 +19,10 @@ class BaseDarkKnightDialog(SessionDialog):
     
     """
 
-    _icon_path = IconFactory().disk_path("icon:///images/icons/dk_icon.png")
+    _icon_path = IconFactory().disk_path("icon:///images/icons/dk_64x64.png")
     _logo_path = IconFactory().disk_path("icon:///images/logos/dk_logo.png")
     _logo_full_path = IconFactory().disk_path("icon:///images/logos/dk_full.png")
+    _dir_path = IconFactory().disk_path("icon:///images/icons/dir_32x32.png")
 
     # -------------------------------------------------------------------------
     def __init__(self, parent=None):
@@ -50,15 +53,14 @@ class BaseDarkKnightDialog(SessionDialog):
         _display_logo(logo_btn.isChecked())
         logo_btn.toggled.connect(_display_logo)
         
-        controls_layout = self._setup_controls()
+        controls_widget = self._setup_controls()
+        scroll_area = None
 
-        controls_widget = QtGui.QWidget()
-        controls_widget.setLayout(controls_layout)
-
-        scroll_area = QtGui.QScrollArea()
-        scroll_area.setFocusPolicy(QtCore.Qt.NoFocus)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(controls_widget)
+        if controls_widget:
+            scroll_area = QtGui.QScrollArea()
+            scroll_area.setFocusPolicy(QtCore.Qt.NoFocus)
+            scroll_area.setWidgetResizable(True)
+            scroll_area.setWidget(controls_widget)
 
         submit_btn = QtGui.QPushButton("Submit")
         submit_btn.clicked.connect(self._submit)
@@ -66,15 +68,26 @@ class BaseDarkKnightDialog(SessionDialog):
         main_layout = QtGui.QVBoxLayout(self)
         main_layout.setSpacing(4)
         main_layout.setContentsMargins(4, 4, 4, 4)
+
         main_layout.addWidget(logo_btn)
-        main_layout.addLayout(self._output_options())
-        main_layout.addWidget(scroll_area)
+        main_layout.setStretchFactor(logo_btn, 0)
+
+        output_options = self._output_options()
+        if output_options:
+            main_layout.addLayout(output_options)
+            main_layout.setStretchFactor(output_options, 0)
+
+        if scroll_area:
+            main_layout.addWidget(scroll_area)
+            main_layout.setStretchFactor(scroll_area, 1000)
+
         main_layout.addWidget(submit_btn)
+        main_layout.setStretchFactor(submit_btn, 0)
 
     # -------------------------------------------------------------------------
     def _output_options(self):
 
-        output_type_lbl = QtGui.QLabel("Output location:")
+        output_type_lbl = QtGui.QLabel("Output:")
         output_type = QtGui.QComboBox()
         output_type.addItems(['Automatic', 'Manual'])
 
@@ -97,30 +110,65 @@ class BaseDarkKnightDialog(SessionDialog):
             version = "None"
 
         ptask_lbl = QtGui.QLabel("PTask:")
-        ptask = QtGui.QLabel("<B>" + str(cur_ptask) + "</B>")
+        ptask_edit = QtGui.QLineEdit(str(cur_ptask))
+        ptask_edit.setReadOnly(True)
 
         version_lbl = QtGui.QLabel("Version:")
-        version = QtGui.QLabel("<B>" + str(version) + "</B>")
-
+        version_num = QtGui.QLabel("<B>" + str(version) + "</B>")
 
         auto_layout = QtGui.QGridLayout()
         auto_layout.setSpacing(4)
         auto_layout.setContentsMargins(4, 4, 4, 4)
         auto_layout.addWidget(ptask_lbl, 0, 0, QtCore.Qt.AlignRight)
-        auto_layout.addWidget(ptask, 0, 1, QtCore.Qt.AlignLeft)
+        auto_layout.addWidget(ptask_edit, 0, 1)
         auto_layout.addWidget(version_lbl, 1, 0, QtCore.Qt.AlignRight)
-        auto_layout.addWidget(version, 1, 1, QtCore.Qt.AlignLeft)
+        auto_layout.addWidget(version_num, 1, 1, QtCore.Qt.AlignLeft)
         auto_layout.setColumnStretch(0, 0)
         auto_layout.setColumnStretch(1, 1000)
 
         auto_widgets = QtGui.QWidget()
         auto_widgets.setLayout(auto_layout)
 
-        # version
-
         # ---- manual
 
-        # directory
+        dir_lbl = QtGui.QLabel("Directory:")
+        dir_edit = QtGui.QLineEdit(os.getcwd())
+
+        dir_btn = QtGui.QPushButton()
+        dir_btn.setFlat(True)
+        dir_btn_size = QtCore.QSize(22, 22)
+        dir_btn.setFixedSize(dir_btn_size)
+        dir_btn.setIcon(QtGui.QIcon(self.__class__._dir_path))
+        dir_btn.setIconSize(dir_btn_size)
+
+        dir_dialog = QtGui.QFileDialog(self, 'Output directory', 
+            os.getcwd())
+        dir_dialog.setFileMode(QtGui.QFileDialog.Directory)
+        dir_dialog.setOption(QtGui.QFileDialog.ShowDirsOnly, True)
+        dir_dialog.setOption(QtGui.QFileDialog.DontResolveSymlinks, True)
+        dir_dialog.setOption(QtGui.QFileDialog.HideNameFilterDetails, True)
+        dir_dialog.fileSelected.connect(dir_edit.setText)
+
+        dir_btn.clicked.connect(dir_dialog.show)
+
+        manual_layout = QtGui.QGridLayout()
+        manual_layout.setSpacing(4)
+        manual_layout.setContentsMargins(4, 4, 4, 4)
+        manual_layout.addWidget(dir_lbl, 0, 0, QtCore.Qt.AlignRight)
+        manual_layout.addWidget(dir_edit, 0, 1)
+        manual_layout.addWidget(dir_btn, 0, 2)
+        manual_layout.setColumnStretch(0, 0)
+        manual_layout.setColumnStretch(1, 1000)
+        manual_layout.setColumnStretch(2, 0)
+
+        manual_widgets = QtGui.QWidget()
+        manual_widgets.setLayout(manual_layout)
+
+        output_stack = QtGui.QStackedWidget()
+        output_stack.addWidget(auto_widgets)
+        output_stack.addWidget(manual_widgets)
+
+        output_type.activated.connect(output_stack.setCurrentIndex)
 
         # ---- layout
 
@@ -128,10 +176,16 @@ class BaseDarkKnightDialog(SessionDialog):
         output_layout.setSpacing(4)
         output_layout.setContentsMargins(4, 4, 4, 4)
         output_layout.addLayout(header_layout)
-        output_layout.addLayout(auto_layout)
+        output_layout.addWidget(output_stack)
+        output_layout.addWidget(file_type)
 
         return output_layout 
 
+    # -------------------------------------------------------------------------
+    @property
+    def output_file_types(self):
+        """Returns a list of output file types."""
+        return ["exr"]
 
     # -------------------------------------------------------------------------
     def _separator(self):
@@ -143,7 +197,7 @@ class BaseDarkKnightDialog(SessionDialog):
 
     # -------------------------------------------------------------------------
     def _setup_controls(self):
-        """Add UI controls here. Return a layout that can be added to DK."""
+        """Add UI controls here. Return a widget that can be added to DK."""
         pass
 
     # -------------------------------------------------------------------------

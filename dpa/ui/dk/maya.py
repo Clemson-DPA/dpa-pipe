@@ -11,14 +11,14 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
     # -------------------------------------------------------------------------
     def _setup_controls(self):
 
-        layout = QtGui.QGridLayout()
+        controls_layout = QtGui.QGridLayout()
         
-        
-        
-        # XXX info about ptask, version, etc.
-        # XXX separate render layers
+
         # XXX file format (only exr for now)
         # XXX resolution - make standard...
+        
+        
+        # XXX separate render layers
         # XXX renderer list
         # XXX start, end, step
         # XXX manual frame range
@@ -28,7 +28,11 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         # XXX queue name
         # XXX submit button
 
-        return layout
+
+        controls_widget = QtGui.QWidget()
+        controls_widget.setLayout(controls_layout)
+        
+        return controls_widget 
 
     # -------------------------------------------------------------------------
     def _submit(self):
