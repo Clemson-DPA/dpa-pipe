@@ -177,7 +177,7 @@ class BaseDarkKnightDialog(SessionDialog):
         output_layout.setContentsMargins(4, 4, 4, 4)
         output_layout.addLayout(header_layout)
         output_layout.addWidget(output_stack)
-        output_layout.addWidget(file_type)
+        #output_layout.addWidget(file_type)
 
         return output_layout 
 
