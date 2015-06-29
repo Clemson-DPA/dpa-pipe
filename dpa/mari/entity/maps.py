@@ -99,7 +99,8 @@ class MapsEntity(Entity):
                     txmake=txmake, tif=tif_file, tex=tex_file)
 
                 if queue:
-                    queue_submit_cmd(txcmd, queue_name, output_file=tex_file)
+                    queue_submit_cmd(txcmd, queue_name, output_file=tex_file,
+                        id_extra=file_base.replace(".", "_"))
                 else:
                     os.system(txcmd)
 
