@@ -64,6 +64,21 @@ class EntityExportWizard(QtGui.QWizard):
 
         self.setEnabled(False)
 
+        try:
+            # hardcoding. bleh. a better solution would be to identify sessions
+            # as a typical file/save operation vs. the mari archive scheme.
+            if self.session.app_name == 'mari':
+                self.session.save(archive=False)
+            else:
+                self.session.save()
+        except Exception as e:
+            error_dialog = QtGui.QErrorMessage(self)
+            error_dialog.setWindowTitle("Save Errors")
+            error_dialog.showMessage(
+                "There was an error saving the session:<br><br>" + str(e))
+            self.setEnabled(True)
+            return
+
         errors = []
 
         publish = self._publish_check.isChecked()
@@ -91,6 +106,12 @@ class EntityExportWizard(QtGui.QWizard):
                             product_ver.publish()
 
         if version_up and not errors:
+
+            # hardcoding again :(. Now that export has finished, go ahead and
+            # archive the mari session
+            if self.session.app_name == 'mari':
+                self.session.save(archive=True)
+
             version_action_cls = ActionRegistry().get_action('version', 'work')            
             if not version_action_cls:
                 errors.append(
