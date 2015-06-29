@@ -16,17 +16,23 @@ from dpa.user import current_username
 QUEUE = 'cheesyq'
 
 # -----------------------------------------------------------------------------
-def queue_submit_cmd(command, queue_name, output_file=None):
+def queue_submit_cmd(command, queue_name, output_file=None, id_extra=None):
     """Create and submit a shell script with the given command."""
     
     ptask_area = PTaskArea.current()
     ptask_area.provision(QUEUE)
     script_dir = ptask_area.dir(dir_name=QUEUE)
 
-    unique_id = "{u}_{t}_{s}".format(
+    now = datetime.datetime.now()
+
+    if not id_extra:
+        id_extra = now.strftime("%f")
+
+    unique_id = "{u}_{t}_{s}_{e}".format(
         u=current_username(),
-        t=datetime.datetime.now().strftime("%m%d%Y%H%M%S%f"),
+        t=now.strftime("%Y_%m_%d_%H_%M_%S"),
         s=ptask_area.spec.replace('=', '_'),
+        e=id_extra,
     )
     script_name = unique_id + '.sh'
     log_name = unique_id + '.log'
