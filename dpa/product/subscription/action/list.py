@@ -75,15 +75,17 @@ class SubscriptionListAction(Action):
     # -------------------------------------------------------------------------
     def validate(self):
 
-        if self.spec and not self._versions:
+        cur_spec = PTaskArea.current().spec
+        full_spec = PTaskSpec.get(self.spec, relative_to=cur_spec)
+
+        # if we're listing the current ptask's subs, and no versions specified
+        if cur_spec == full_spec and not self._versions:
             ptask_ver = DpaVars.ptask_version().get()
             if ptask_ver:
                 self._versions = [ptask_ver]
-            else:
-                self._versions = ["latest"]
-        
-        cur_spec = PTaskArea.current().spec
-        full_spec = PTaskSpec.get(self.spec, relative_to=cur_spec)
+
+        if not self._versions:
+            self._versions = ["latest"]
 
         # try to get a ptask instance from the db
         try:
