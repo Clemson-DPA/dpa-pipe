@@ -5,6 +5,7 @@ import re
 from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
 from dpa.app.entity import Entity, EntityRegistry, EntityError
+from dpa.logging import Logger
 from dpa.ptask.area import PTaskArea, PTaskAreaError
 
 # -----------------------------------------------------------------------------
@@ -211,9 +212,13 @@ class SetBasedWorkfileEntity(SetBasedEntity):
                 else:
                     ref_node = session.cmds.file(
                         repr_path, referenceNode=True, query=True)
-                    entities_to_create.append(
-                        (cls._get_top_level_ref_objs(session, ref_node),
-                            name, None))
+                    if not ref_node:
+                        Logger.get().warning(
+                            "No reference node found for " + repr_path)
+                    else:
+                        entities_to_create.append(
+                            (cls._get_top_level_ref_objs(session, ref_node),
+                                name, None))
         else:
             for inst in range(instance_start, instance_start + instances):
                 inst_name = name + "_" + str(inst)
@@ -231,9 +236,13 @@ class SetBasedWorkfileEntity(SetBasedEntity):
                     else:
                         ref_node = session.cmds.file(
                             repr_path, referenceNode=True, query=True)
-                        entities_to_create.append(
-                            (cls._get_top_level_ref_objs(session, ref_node), 
-                                name, inst))
+                        if not ref_node:
+                            Logger.get().warning(
+                                "No reference node found for " + repr_path)
+                        else:
+                            entities_to_create.append(
+                                (cls._get_top_level_ref_objs(session, ref_node), 
+                                    name, inst))
 
         entities = []
         
@@ -249,7 +258,7 @@ class SetBasedWorkfileEntity(SetBasedEntity):
     # -------------------------------------------------------------------------
     @classmethod
     def _get_top_level_ref_objs(cls, session, ref_node):
-        
+
         ref_objs = session.cmds.referenceQuery(ref_node, nodes=True)
         top_level_objs = session.cmds.ls(references=True, assemblies=True)
         top_level_ref_objs= []
