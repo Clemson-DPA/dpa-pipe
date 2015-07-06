@@ -53,13 +53,20 @@ class MayaEntity(Entity):
     # -------------------------------------------------------------------------
     @classmethod
     def _fbx_import(cls, session, representation, *args, **kwargs):
-        
-        # XXX needs to be revisitied. just making this work for now...
 
+        reference = kwargs.pop('reference', True)
+        
         product = representation.product_version.product
         fbx_file = cls.get_import_file(session, product.name, 
             product.category, representation)
-        session.mel.eval('FBXImport -f "{path}" -s'.format(path=fbx_file))
+
+        if reference:
+            #  -options "v=0;" "/home/arizeak/Desktop/fake.fbx";
+            session.cmds.file(fbx_file, reference=True, type="FBX", 
+                ignoreVersion=True, groupLocator=True, 
+                mergeNamespacesOnClash=True, namespace=":", options="v=0;")
+        else:
+            session.mel.eval('FBXImport -f "{path}" -s'.format(path=fbx_file))
 
 # -----------------------------------------------------------------------------
 class SetBasedEntity(MayaEntity):
