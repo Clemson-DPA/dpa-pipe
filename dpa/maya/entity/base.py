@@ -5,6 +5,7 @@ import re
 from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
 from dpa.app.entity import Entity, EntityRegistry, EntityError
+from dpa.logging import Logger
 from dpa.ptask.area import PTaskArea, PTaskAreaError
 
 # -----------------------------------------------------------------------------
@@ -52,13 +53,20 @@ class MayaEntity(Entity):
     # -------------------------------------------------------------------------
     @classmethod
     def _fbx_import(cls, session, representation, *args, **kwargs):
-        
-        # XXX needs to be revisitied. just making this work for now...
 
+        reference = kwargs.pop('reference', True)
+        
         product = representation.product_version.product
         fbx_file = cls.get_import_file(session, product.name, 
             product.category, representation)
-        session.mel.eval('FBXImport -f "{path}" -s'.format(path=fbx_file))
+
+        if reference:
+            #  -options "v=0;" "/home/arizeak/Desktop/fake.fbx";
+            session.cmds.file(fbx_file, reference=True, type="FBX", 
+                ignoreVersion=True, groupLocator=True, 
+                mergeNamespacesOnClash=True, namespace=":", options="v=0;")
+        else:
+            session.mel.eval('FBXImport -f "{path}" -s'.format(path=fbx_file))
 
 # -----------------------------------------------------------------------------
 class SetBasedEntity(MayaEntity):
@@ -211,9 +219,13 @@ class SetBasedWorkfileEntity(SetBasedEntity):
                 else:
                     ref_node = session.cmds.file(
                         repr_path, referenceNode=True, query=True)
-                    entities_to_create.append(
-                        (cls._get_top_level_ref_objs(session, ref_node),
-                            name, None))
+                    if not ref_node:
+                        Logger.get().warning(
+                            "No reference node found for " + repr_path)
+                    else:
+                        entities_to_create.append(
+                            (cls._get_top_level_ref_objs(session, ref_node),
+                                name, None))
         else:
             for inst in range(instance_start, instance_start + instances):
                 inst_name = name + "_" + str(inst)
@@ -231,9 +243,13 @@ class SetBasedWorkfileEntity(SetBasedEntity):
                     else:
                         ref_node = session.cmds.file(
                             repr_path, referenceNode=True, query=True)
-                        entities_to_create.append(
-                            (cls._get_top_level_ref_objs(session, ref_node), 
-                                name, inst))
+                        if not ref_node:
+                            Logger.get().warning(
+                                "No reference node found for " + repr_path)
+                        else:
+                            entities_to_create.append(
+                                (cls._get_top_level_ref_objs(session, ref_node), 
+                                    name, inst))
 
         entities = []
         
@@ -249,7 +265,7 @@ class SetBasedWorkfileEntity(SetBasedEntity):
     # -------------------------------------------------------------------------
     @classmethod
     def _get_top_level_ref_objs(cls, session, ref_node):
-        
+
         ref_objs = session.cmds.referenceQuery(ref_node, nodes=True)
         top_level_objs = session.cmds.ls(references=True, assemblies=True)
         top_level_ref_objs= []
