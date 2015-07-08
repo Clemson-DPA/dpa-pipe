@@ -137,6 +137,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         self._generate_ribs = self._gen_ribs.isChecked()
         self._remove_ribs = self._rem_ribs.isChecked()
         self._version_note = self._version_note_edit.text()
+        self._debug_mode = self._debug.isChecked()
 
         if not self._version_note:
             self._show_error("Please specify a description of " + 
@@ -217,7 +218,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             raise DarkKnightError("Unable to find product creation action.")
 
         # set lazy rib gen
-        self.session.cmds.setAttr("renderManGlobals.rman__toropt___lazyRibGen", True)
+        self.session.cmds.setAttr("renderManGlobals.rman__toropt___lazyRibGen",
+            True)
         
         # ---- clean up ribs
 
@@ -297,8 +299,13 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     "{rl}.{fn}.sh".format(rl=render_layer, fn=frame_padded))
 
                 out_dir = product_repr_area.dir()
-                out_file = os.path.join(out_dir, "{rl}.{fn}.{ft}".format(
-                    rl=render_layer, fn=frame_padded, ft=self._file_type))
+
+                out_file = os.path.join(out_dir, "{rl}*.{fn}.{ft}".\
+                    format(rl=render_layer, fn=frame_padded, ft=self._file_type))
+
+                wrong_out_file = os.path.join(out_dir, render_layer,
+                    "{rl}.{fn}.{ft}".format(
+                        rl=render_layer, fn=frame_padded, ft=self._file_type))
 
                 render_cmd = "Render -r rman -fnc name.#.ext "
                 render_cmd += "-proj {proj} ".format(proj=ver_project)
@@ -313,10 +320,23 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                 with open(script_path, "w") as script_file:
                     script_file.write("#!/bin/bash\n\n")
+
+                    # XXX these should happen automatically in the queue...
+                    script_file.write("source /DPA/moosefs/dpa/bash/startup.bash\n")
+                    script_file.write("pipeup\n\n")
+
                     script_file.write("# set the ptask version to render\n")
                     script_file.write(dpaset_cmd + "\n\n")
                     script_file.write("# render!\n")
                     script_file.write(render_cmd + "\n\n")
+
+                    # rman renders to a subdirectory with the render layer name 
+                    # when there are more than one layer. we want the images
+                    # one level up.
+                    if len(render_layers) > 1:
+                        script_file.write("mv {wof} {of}\n\n".format(
+                            wof=wrong_out_file, of=out_file))
+
                     script_file.write("chmod 660 " + out_file + "\n\n")
 
                 os.chmod(script_path, 0770)
@@ -369,20 +389,22 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 os.chmod(script_path, 0770)
 
                 # submit the ribgen script
-                progress_dialog.setLabelText(
-                    "Submitting rib gen: " + script_path)
-                os.system("cqsubmittask {q} {s}".format(
-                    q=self._ribgen_queue, s=script_path))
+                if not self._debug_mode:
+                    progress_dialog.setLabelText(
+                        "Submitting rib gen: " + script_path)
+                    os.system("cqsubmittask {q} {s}".format(
+                        q=self._ribgen_queue, s=script_path))
 
                 cur_op += 1
                 progress_dialog.setValue(cur_op)
 
             else: 
                 for frame_script in frame_scripts:
-                    progress_dialog.setLabelText(
-                        "Submitting frame: " + frame_script)
-                    os.system("cqsubmittask {q} {s}".format(
-                        q=self._render_queue, s=frame_script))
+                    if not self._debug_mode:
+                        progress_dialog.setLabelText(
+                            "Submitting frame: " + frame_script)
+                        os.system("cqsubmittask {q} {s}".format(
+                            q=self._render_queue, s=frame_script))
 
                     cur_op += 1
                     progress_dialog.setValue(cur_op)
@@ -653,6 +675,9 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         rem_ribs_lbl = QtGui.QLabel("Remove existing ribs:")
         self._rem_ribs = QtGui.QCheckBox("")
 
+        debug_lbl = QtGui.QLabel("Debug mode:")
+        self._debug = QtGui.QCheckBox("")
+
         controls_layout.addWidget(version_note_lbl, 0, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._version_note_edit, 0, 1)
         controls_layout.addWidget(frange_lbl, 1, 0, QtCore.Qt.AlignRight)
@@ -674,6 +699,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         controls_layout.addWidget(self._gen_ribs, 8, 1, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(rem_ribs_lbl, 9, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._rem_ribs, 9, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(debug_lbl, 10, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._debug, 10, 1, QtCore.Qt.AlignLeft)
         controls_layout.setColumnStretch(2, 1000)
 
         controls_vbox = QtGui.QVBoxLayout()
