@@ -21,7 +21,9 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
     # FIXME: i don't want to hardcode this stuff ...
     OUTPUT_FILE_TYPES = ['exr']
-    QUEUES = ['muenster', 'cheddar', 'gouda', 'goat', 'hold', 'nuke', 
+    RENDER_QUEUES = ['muenster', 'cheddar', 'gouda', 'goat', 'hold', 'nuke', 
+        'velveeta', 'cheezwhiz']
+    RIBGEN_QUEUES = ['goat', 'cheddar','muenster',  'gouda', 'hold', 'nuke', 
         'velveeta', 'cheezwhiz']
 
     # -------------------------------------------------------------------------
@@ -129,7 +131,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         self._file_type = self._file_types.currentText()
         self._camera = self._cameras.currentText()
-        self._queue = self._queues.currentText()
+        self._ribgen_queue = self._ribgen_queues.currentText()
+        self._render_queue = self._render_queues.currentText()
         self._separate_layers = self._sep_layers.isChecked()
         self._generate_ribs = self._gen_ribs.isChecked()
         self._remove_ribs = self._rem_ribs.isChecked()
@@ -175,6 +178,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         progress_dialog = QtGui.QProgressDialog(
             "Product render...", "", cur_op, num_ops, self)
+        progress_dialog.setWindowTitle("Dark Knight is busy...")
         progress_dialog.setAutoReset(False)
 
         ptask = self._cur_ptask
@@ -351,29 +355,34 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                         rib_cmd += "{mf} ".format(mf=maya_file) 
                         script_file.write(rib_cmd + "\n")
 
-                    script_file.write("\n# make sure project dir has group permissions\n")
-                    script_file.write("chmod g+rw {pd} -R\n\n".format(pd=ver_project))
+                    script_file.write(
+                        "\n# make sure project dir has group permissions\n")
+                    script_file.write(
+                        "chmod g+rw {pd} -R\n\n".format(pd=ver_project))
 
                     # submit the frames to render
                     script_file.write("# Submit frames after rib gen \n")
                     for frame_script in frame_scripts:
                         script_file.write("cqsubmittask {q} {s}\n".format(
-                            q=self._queue, s=frame_script))
+                            q=self._render_queue, s=frame_script))
 
                 os.chmod(script_path, 0770)
 
                 # submit the ribgen script
-                progress_dialog.setLabelText("Submitting rib gen: " + script_path)
-                os.system("cqsubmittask {q} {s}".format(q=self._queue, s=script_path))
+                progress_dialog.setLabelText(
+                    "Submitting rib gen: " + script_path)
+                os.system("cqsubmittask {q} {s}".format(
+                    q=self._ribgen_queue, s=script_path))
 
                 cur_op += 1
                 progress_dialog.setValue(cur_op)
 
             else: 
                 for frame_script in frame_scripts:
-                    progress_dialog.setLabelText("Submitting frame: " + frame_script)
+                    progress_dialog.setLabelText(
+                        "Submitting frame: " + frame_script)
                     os.system("cqsubmittask {q} {s}".format(
-                        q=self._queue, s=frame_script))
+                        q=self._render_queue, s=frame_script))
 
                     cur_op += 1
                     progress_dialog.setValue(cur_op)
@@ -549,45 +558,42 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         self._file_res.setInsertPolicy(QtGui.QComboBox.InsertAtTop)
         self._file_res.addItems(self._get_resolutions(width, height))
 
-        cam_list = self.session.cmds.listCameras(perspective=True)
-        cam_list.extend(self.session.cmds.listCameras(orthographic=True))
-
-        default_cam = 0
-
-        for (cam_index, cam) in enumerate(cam_list):
-            cam_shape = self.session.cmds.listRelatives(cam, shapes=True)[0]
-            cam_renderable = self.session.cmds.getAttr(cam_shape + ".renderable")
+        cam_shape_list = self.session.cmds.ls(cameras=True)
+        cam_list = []
+        for cam_shape in cam_shape_list:
+            cam_renderable = self.session.cmds.getAttr(
+                cam_shape + ".renderable")
+            cam_name = str(
+                self.session.cmds.listRelatives(cam_shape, parent=True)[0])
             if cam_renderable:
-                default_cam = cam_index
-                break
+                cam_list.insert(0, cam_name)
+            else:
+                cam_list.append(cam_name)
 
         cameras_lbl = QtGui.QLabel("Camera:")
         self._cameras = QtGui.QComboBox()
         self._cameras.addItems(cam_list)
-        self._cameras.setCurrentIndex(cam_index)
 
         frange_lbl = QtGui.QLabel("Frame range:")
 
-        min_time = self.session.cmds.playbackOptions(
-            query=True, minTime=True)
-        max_time = self.session.cmds.playbackOptions(
-            query=True, maxTime=True)
+        min_time = self.session.cmds.playbackOptions(query=True, minTime=True)
+        max_time = self.session.cmds.playbackOptions(query=True, maxTime=True)
 
         start_time = self.session.cmds.getAttr('defaultRenderGlobals.startFrame')
         end_time = self.session.cmds.getAttr('defaultRenderGlobals.endFrame')
 
         self._frame_start = QtGui.QSpinBox()
-        self._frame_start.setValue(min_time)
-        self._frame_start.setMinimum(start_time)
-        self._frame_start.setMaximum(end_time)
+        self._frame_start.setMinimum(min_time)
+        self._frame_start.setMaximum(max_time)
+        self._frame_start.setValue(int(start_time))
         self._frame_start.setFixedWidth(50)
 
         frame_to = QtGui.QLabel("to")
 
         self._frame_end = QtGui.QSpinBox()
-        self._frame_end.setValue(max_time)
-        self._frame_end.setMinimum(start_time)
-        self._frame_end.setMaximum(end_time)
+        self._frame_end.setMinimum(min_time)
+        self._frame_end.setMaximum(max_time)
+        self._frame_end.setValue(int(end_time))
         self._frame_end.setFixedWidth(50)
 
         frame_by = QtGui.QLabel("by")
@@ -609,7 +615,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         auto_frange.setLayout(auto_frange_layout)
 
         self._manual_frange = QtGui.QLineEdit(
-            str(int(min_time)) + "-" + str(int(max_time)))
+            str(int(start_time)) + "-" + str(int(end_time)))
         self._manual_frange.setFixedHeight(22)
 
         self._frange_stack = QtGui.QStackedWidget()
@@ -628,9 +634,13 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         frange_btn.toggled.connect(
             lambda c: self._frange_stack.setCurrentIndex(int(c)))
 
-        queue_lbl = QtGui.QLabel("Render queue:")        
-        self._queues = QtGui.QComboBox()
-        self._queues.addItems(self.__class__.QUEUES)
+        render_queue_lbl = QtGui.QLabel("Render queue:")
+        self._render_queues = QtGui.QComboBox()
+        self._render_queues.addItems(self.__class__.RENDER_QUEUES)
+
+        ribgen_queue_lbl = QtGui.QLabel("Rib generation queue:")
+        self._ribgen_queues = QtGui.QComboBox()
+        self._ribgen_queues.addItems(self.__class__.RIBGEN_QUEUES)
 
         sep_layers_lbl = QtGui.QLabel("Separate render layers:")
         self._sep_layers = QtGui.QCheckBox("")
@@ -654,8 +664,10 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         controls_layout.addWidget(self._file_types, 3, 1, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(cameras_lbl, 4, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._cameras, 4, 1, QtCore.Qt.AlignLeft)
-        controls_layout.addWidget(queue_lbl, 6, 0, QtCore.Qt.AlignRight)
-        controls_layout.addWidget(self._queues, 6, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(ribgen_queue_lbl, 5, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._ribgen_queues, 5, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(render_queue_lbl, 6, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._render_queues, 6, 1, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(sep_layers_lbl, 7, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._sep_layers, 7, 1, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(gen_ribs_lbl, 8, 0, QtCore.Qt.AlignRight)
