@@ -71,3 +71,7 @@ class BaseDarkKnightDialog(SessionDialog):
 
         return sep
 
+# -----------------------------------------------------------------------------
+class DarkKnightError(Exception):
+    pass
+
