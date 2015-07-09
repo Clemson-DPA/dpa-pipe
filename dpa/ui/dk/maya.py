@@ -300,11 +300,11 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                 out_dir = product_repr_area.dir()
 
-                out_file = os.path.join(out_dir, "{rl}*.{fn}.{ft}".\
+                out_file = os.path.join(out_dir, "{rl}.{fn}.{ft}".\
                     format(rl=render_layer, fn=frame_padded, ft=self._file_type))
 
-                wrong_out_file = os.path.join(out_dir, render_layer,
-                    "{rl}.{fn}.{ft}".format(
+                wrong_out_files = os.path.join(out_dir, render_layer,
+                    "{rl}*.{fn}.{ft}".format(
                         rl=render_layer, fn=frame_padded, ft=self._file_type))
 
                 render_cmd = "Render -r rman -fnc name.#.ext "
@@ -334,10 +334,11 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     # when there are more than one layer. we want the images
                     # one level up.
                     if len(render_layers) > 1:
-                        script_file.write("mv {wof} {of}\n\n".format(
-                            wof=wrong_out_file, of=out_file))
+                        script_file.write("mv {wof} {od}\n\n".format(
+                            wof=wrong_out_files, od=out_dir))
 
-                    script_file.write("chmod 660 " + out_file + "\n\n")
+                    script_file.write("chmod 660 {of}\n\n".format(
+                        of=os.path.join(out_dir, "*")))
 
                 os.chmod(script_path, 0770)
 
