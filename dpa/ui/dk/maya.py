@@ -339,7 +339,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                             wof=wrong_out_files, od=out_dir))
 
                     script_file.write("chmod 660 {of}\n\n".format(
-                        of=os.path.join(out_dir, "*")))
+                        of=os.path.join(out_dir, "*." + self._file_type)))
 
                 os.chmod(script_path, 0770)
 
