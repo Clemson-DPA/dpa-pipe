@@ -194,6 +194,10 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         file_base = os.path.splitext(os.path.split(maya_file)[1])[0]
 
+        # set lazy rib gen before save/sync
+        self.session.cmds.setAttr("renderManGlobals.rman__toropt___lazyRibGen",
+            True)
+        
         # ---- sync current work area to version snapshot to render from
 
         cur_project = self.session.cmds.workspace(query=True, rootDirectory=True)
@@ -217,10 +221,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             progress_dialog.close()
             raise DarkKnightError("Unable to find product creation action.")
 
-        # set lazy rib gen
-        self.session.cmds.setAttr("renderManGlobals.rman__toropt___lazyRibGen",
-            True)
-        
         # ---- clean up ribs
 
         if self._remove_ribs:
