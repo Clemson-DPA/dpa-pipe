@@ -206,9 +206,10 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         progress_dialog.setLabelText("Sync'ing work to current version...")
 
         try:
+            self.session.save() 
             self._sync_latest()
         except Exception as e:
-            self._show_error("Unable to sync the latest work: " + str(e))
+            self._show_error("Unable to save & sync the latest work: " + str(e))
             self.setEnabled(True)
             progress_dialog.close()
             return
