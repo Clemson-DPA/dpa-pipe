@@ -1,6 +1,7 @@
 
 # -----------------------------------------------------------------------------
 
+import datetime
 import os
 import shutil
 
@@ -13,6 +14,7 @@ from dpa.frange import Frange, FrangeError
 from dpa.imgres import ImgRes, ImgResError
 from dpa.ptask.area import PTaskArea, PTaskAreaError
 from dpa.ptask import PTask
+from dpa.queue import get_unique_id, create_queue_task
 from dpa.ui.dk.base import BaseDarkKnightDialog, DarkKnightError
 from dpa.ui.icon.factory import IconFactory
 
@@ -162,18 +164,20 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
     # -----------------------------------------------------------------------------
     def _product_render(self):
 
+        # get timestamp for all the tasks being submitted
+        now = datetime.datetime.now()
+    
         render_layers = self._get_render_layers()
 
         # figure out the total number of operations to perform for the progress
-        num_ops = 1 + len(render_layers) * len(self._frame_list)
+        num_ops = 1 + len(render_layers) * len(self._frame_list) # layer > frame
+        num_ops += len(self._frame_list) # frame submission
 
         if self._remove_ribs:
             num_ops += 1
 
         if self._generate_ribs:
             num_ops += 1
-        else: 
-            num_ops += len(self._frame_list)
 
         cur_op = 0
 
@@ -224,11 +228,11 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         # ---- clean up ribs
 
+        rib_dir = os.path.join(ver_project, 'renderman', file_base, 'rib')
         if self._remove_ribs:
 
             progress_dialog.setLabelText("Removing ribs...")
 
-            rib_dir = os.path.join(ver_project, 'renderman', file_base, 'rib')
             if os.path.isdir(rib_dir):
                 try:
                     shutil.rmtree(rib_dir)
@@ -343,7 +347,34 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                 os.chmod(script_path, 0770)
 
-                frame_scripts.append(script_path)
+                frame_scripts.append((frame_padded, script_path))
+
+                cur_op += 1
+                progress_dialog.setValue(cur_op)
+
+            frame_tasks = []
+
+            # submit the frames to render
+            for (frame, frame_script) in frame_scripts:
+
+                if self._generate_ribs:
+                    queue = 'hold'
+                else:
+                    queue = self._render_queue
+
+                progress_dialog.setLabelText(
+                    "Submitting frame: " + frame_script)
+
+                task_id = get_unique_id(product_repr_area.spec,
+                    id_extra=frame, dt=now)
+
+                if not self._debug_mode:
+
+                    create_queue_task(queue, frame_script, task_id,
+                        output_file=out_dir, submit=True, 
+                        log_path=frame_script + '.log')
+
+                    frame_tasks.append(task_id)
 
                 cur_op += 1
                 progress_dialog.setValue(cur_op)
@@ -384,32 +415,27 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     # submit the frames to render
                     script_file.write("# Submit frames after rib gen \n")
-                    for frame_script in frame_scripts:
-                        script_file.write("cqsubmittask {q} {s}\n".format(
-                            q=self._render_queue, s=frame_script))
+                    for frame_task in frame_tasks:
+                        script_file.write("cqmovetask {qn} {tid}\n".format(
+                            qn=self._render_queue, tid=frame_task))
 
                 os.chmod(script_path, 0770)
 
                 # submit the ribgen script
+                progress_dialog.setLabelText(
+                    "Submitting rib gen: " + script_path)
+
+                task_id = get_unique_id(product_repr_area.spec,
+                    id_extra='ribs', dt=now)
+
                 if not self._debug_mode:
-                    progress_dialog.setLabelText(
-                        "Submitting rib gen: " + script_path)
-                    os.system("cqsubmittask {q} {s}".format(
-                        q=self._ribgen_queue, s=script_path))
+
+                    create_queue_task(self._ribgen_queue, script_path, 
+                        task_id, output_file=rib_dir, submit=True, 
+                        log_path=script_path + '.log')
 
                 cur_op += 1
                 progress_dialog.setValue(cur_op)
-
-            else: 
-                for frame_script in frame_scripts:
-                    if not self._debug_mode:
-                        progress_dialog.setLabelText(
-                            "Submitting frame: " + frame_script)
-                        os.system("cqsubmittask {q} {s}".format(
-                            q=self._render_queue, s=frame_script))
-
-                    cur_op += 1
-                    progress_dialog.setValue(cur_op)
 
             cur_op += 1
             progress_dialog.setValue(cur_op)
