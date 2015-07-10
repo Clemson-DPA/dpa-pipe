@@ -16,24 +16,32 @@ from dpa.user import current_username
 QUEUE = 'cheesyq'
 
 # -----------------------------------------------------------------------------
-def queue_submit_cmd(command, queue_name, output_file=None, id_extra=None):
+def get_unique_id(area_spec="", id_extra=None, dt=None):
+
+    if not dt:
+        dt = datetime.datetime.now()
+
+    if not id_extra:
+        id_extra = dt.strftime("%f")
+
+    return "{u}_{t}_{s}_{e}".format(
+        u=current_username(),
+        t=dt.strftime("%Y_%m_%d_%H_%M_%S"),
+        s=area_spec.replace('=', '_'),
+        e=id_extra,
+    )
+
+# -----------------------------------------------------------------------------
+def queue_submit_cmd(command, queue_name, output_file=None, id_extra=None,
+    dt=None):
     """Create and submit a shell script with the given command."""
     
     ptask_area = PTaskArea.current()
     ptask_area.provision(QUEUE)
     script_dir = ptask_area.dir(dir_name=QUEUE)
 
-    now = datetime.datetime.now()
+    unique_id = get_unique_id(ptask_area.spec, id_extra=id_extra, dt=dt)
 
-    if not id_extra:
-        id_extra = now.strftime("%f")
-
-    unique_id = "{u}_{t}_{s}_{e}".format(
-        u=current_username(),
-        t=now.strftime("%Y_%m_%d_%H_%M_%S"),
-        s=ptask_area.spec.replace('=', '_'),
-        e=id_extra,
-    )
     script_name = unique_id + '.sh'
     log_name = unique_id + '.log'
 
@@ -47,6 +55,13 @@ def queue_submit_cmd(command, queue_name, output_file=None, id_extra=None):
 
     os.chmod(script_path, 0770)
 
+    create_queue_task(queue_name, script_path, unique_id, 
+        output_file=output_file, submit=True, log_path=log_path)
+
+# -----------------------------------------------------------------------------
+def create_queue_task(queue_name, script_path, unique_id, output_file=None,
+    submit=True, log_path=None):
+
     # ---- submit to the queue
 
     from cheesyq import DPACheesyQ, DPADataLibrary, DPACheesyQTasks
@@ -55,16 +70,21 @@ def queue_submit_cmd(command, queue_name, output_file=None, id_extra=None):
 
     render_task = DPACheesyQ.RenderTask()
     render_task.taskid = unique_id
-    render_task.logFileName = log_path
-    render_task.outputFileName = output_file
+
+    if log_path:
+        render_task.logFileName = log_path
+
+    if output_file:
+        render_task.outputFileName = output_file
 
     data_lib.set(render_task.taskid, render_task)
     render_task.addTask(script_path)
 
-    os.system("cqresubmittask {qn} {tid}".format(
-        qn=queue_name,
-        tid=render_task.taskid
-    ))
-        
-    print "Submitted task: " + str(render_task.taskid)
+    if submit:
+        os.system("cqresubmittask {qn} {tid}".format(
+            qn=queue_name,
+            tid=render_task.taskid
+        ))
+            
+        print "Submitted task: " + str(render_task.taskid)
 

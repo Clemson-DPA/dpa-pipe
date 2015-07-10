@@ -1,4 +1,5 @@
 
+import datetime
 import os
 import re
 import sys
@@ -71,6 +72,8 @@ class MapsEntity(Entity):
     def _tex_convert(self, product_desc, version_note, tif_product_repr, queue,
         queue_name=None):
 
+        now = datetime.datetime.now()
+
         tex_product_repr = self._create_product(
             product_desc, version_note, 'tex')
 
@@ -100,7 +103,8 @@ class MapsEntity(Entity):
 
                 if queue:
                     queue_submit_cmd(txcmd, queue_name, output_file=tex_file,
-                        id_extra=file_base.replace(".", "_"))
+                        id_extra=file_base.replace(".", "_"),
+                        dt=now)
                 else:
                     os.system(txcmd)
 
