@@ -53,11 +53,8 @@ Actions are custom behaviors that define a project's workflow. Actions are imple
 
 The framework provides Session and Entity APIs for defining common behaviors and interfaces for content creation packages and the importable/exportable items within them. The framework has some simple implementations that drive DPAs Maya, Mari, Nuke, and Houdini workflows allow the same tools and interfaces to be used across all of these packages.
 
-----
-
-See the `project wiki <https://github.com/Clemson-DPA/dpa-pipe/wiki/Code-organization>`_ for a breakdown of the submodules within the **dpa** namespace.
-
-----
+Get involved
+------------
 
 **The framework is currently lacking/needs help in these areas:**
 
