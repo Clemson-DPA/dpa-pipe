@@ -4,8 +4,6 @@ DPA Pipeline Framework
 
 This is an open source production pipeline framework developed by students, staff, and faculty in the `Clemson University Digital Production Arts (DPA) <http://clemson.edu/dpa>`_ MFA program. This project was overseen by DPA staff software engineer `Josh Tomlinson <https://github.com/josh-t>`_ and DPA professor `Dr. Jerry Tessendorf <http://people.clemson.edu/~jtessen/>`_, both formerly of Rhythm & Hues Studios. The implementation is primarily based on the talk given at SIGGRAPH 2014 entitled A `Framework for Global Visual Effects Production Pipelines <https://vimeo.com/116364653>`_ by Josh and his former colleagues based on their work at Rhythm & Hues. This project was also introduced at the Global Pipeline Birds of a Feather meeting at SIGGRAPH that same year. 
 
-The code in this repository represents the state of the framework's development to this point. The framework should be considered a work-in-progress, yet functional system for building and executing a digital production pipeline.  The framework is currently in use by DPA students as they complete an intense summer mentorship program with `Dreamworks Animation <http://www.dreamworksanimation.com>`_.
-
 **The primary goals of this project are to:**
 
 * provide students exposure to a professional quality pipeline that best approximates what they will encounter in the workforce
@@ -47,7 +45,7 @@ Products have other features like location statuses (what locations does a given
 
 **Actions:**
 
-Actions are custom behaviors that define a project's workflow. Actions are implemented by subclassing an abstract base class and then registering within the pipeline. Actions can be triggered via the command line or within python.  Actions include, but are not limited to, versioning a ptask or product, subscribing to products, and setting your ptask context.  package.
+Actions are custom behaviors that define a project's workflow. Actions are implemented by subclassing an abstract base class and then registering within the pipeline. Actions can be triggered via the command line or within python.  Actions include, but are not limited to, versioning a ptask or product, subscribing to products, and setting your ptask context.
 
 **Application support:**
 
@@ -55,6 +53,8 @@ The framework provides Session and Entity APIs for defining common behaviors and
 
 Get involved
 ------------
+
+The code in this repository represents the state of the framework's development to this point. The codebase should not be considered a drop-in, ready-to-use pipeline solution. We consider this project a continual work-in-progress that currently needs some hand-holding, yet is a functioning system for building and executing a digital production pipeline. The framework is currently in use by DPA students as they complete an intense summer mentorship program with `Dreamworks Animation <http://www.dreamworksanimation.com>`_.
 
 **The framework is currently lacking/needs help in these areas:**
 
@@ -66,5 +66,4 @@ Get involved
 * Code review and cleanup
 * A million other things. Please ask!
 
-If you're thinking about, or are in the process of, building your own production pipeline and would just like to know more about this project, please contact `josh-t <https://github.com/josh-t>`_, `Clemson-DPA <https://github.com/Clemson-DPA>`_ or simply create a new issue. 
-
+If you're thinking about, or are in the process of, building your own production pipeline and would just like to know more about this project, please contact `Clemson-DPA <https://github.com/Clemson-DPA>`_ or simply create a new issue.
