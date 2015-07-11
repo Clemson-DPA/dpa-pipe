@@ -8,20 +8,15 @@ The code in this repository represents the state of the framework's development 
 
 **The primary goals of this project are to:**
 
-* provide students exposure to a professional quality pipeline that best 
-  approximate what they will encounter in the workforce
-* allow for collaboration in multiple locations simultaneously
-* create a teaching platform for students to learn python and other production
-  support technologies
+* provide students exposure to a professional quality pipeline that best approximates what they will encounter in the workforce
+* support multi-site workflows
+* create a teaching platform for students to learn python and other production support technologies
 * expose DPA to possible outreach opportunities with industry collaborators
-* expose pipeline and workflow concepts to undergraduate programs that may
-  feed interested students into DPA
+* expose pipeline and workflow concepts to undergraduate programs that may feed interested students into DPA
 
 **Features of the framework include:**
 
-* No assumptions made about the type of work being done, the type of data being
-  shared, or the content creation software being used
-* Designed to support multiple locations
+* No assumptions made about the type of work being done, the type of data being shared, or the content creation software being used
 * Flexible, adaptable project hierarchy
 * Consistent toolsets and workflows for any/all production stages
 * Integrated asset management system
