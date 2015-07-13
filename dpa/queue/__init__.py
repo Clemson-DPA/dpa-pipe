@@ -78,6 +78,7 @@ def create_queue_task(queue_name, script_path, unique_id, output_file=None,
 
     if output_file:
         render_task.outputFileName = output_file
+        render_task.outputLocation = os.path.dirname(output_file)
 
     data_lib.set(render_task.taskid, render_task)
     render_task.addTask(script_path)
