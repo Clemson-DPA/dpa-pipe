@@ -21,10 +21,12 @@ def get_unique_id(area_spec="", id_extra=None, dt=None):
     if not dt:
         dt = datetime.datetime.now()
 
-    if not id_extra:
-        id_extra = dt.strftime("%f")
+    if id_extra:
+        id_extra = "_" + id_extra
+    else:
+        id_extra = ""
 
-    return "{u}_{t}_{s}_{e}".format(
+    return "{u}_{t}_{s}{e}".format(
         u=current_username(),
         t=dt.strftime("%Y_%m_%d_%H_%M_%S"),
         s=area_spec.replace('=', '_'),

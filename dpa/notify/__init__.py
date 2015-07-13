@@ -1,6 +1,7 @@
 
 import smtplib
 from email.mime.text import MIMEText
+from dpa.user import User, UserError
 
 # -----------------------------------------------------------------------------
 class Notification(object):
@@ -73,6 +74,26 @@ class Notification(object):
     def subject(self, sub):
         self._subject = sub
 
+# -----------------------------------------------------------------------------
+def emails_from_unames(unames):
+
+    emails = set()
+
+    for uname in unames:
+            
+        # assume already a valid email address
+        if "@" in uname:
+            emails.add(uname)
+        else:
+            try:
+                user = User.get(uname)
+            except UserError:
+                raise NotificationError("Could not identify user: " + str(uname))
+            else:
+                emails.add(user.email)
+
+    return list(emails)
+    
 # -----------------------------------------------------------------------------
 class NotificationError(Exception):
     pass
