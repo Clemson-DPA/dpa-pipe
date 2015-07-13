@@ -456,6 +456,19 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             render_summary.append(
                 (render_layer, task_id_base, product_repr, queue_dir))
 
+            if not self._debug_mode:
+
+                # ---- dpa specific queue stuff            
+
+                from cheesyq import DPAWrangler
+
+                # create wrangling ticket 
+                wrangle = DPAWrangler.WrangleRecord(task_id_base)
+                wrangle.frames = self._frame_list
+                db = DPAWrangler.GetWranglingDB()
+                db.set(wrangle.baseId, wrangle)
+                DPAWrangler.AssignWranglerTask("none", task_id_base)
+
         if not self._debug_mode:
 
             # send msg...
