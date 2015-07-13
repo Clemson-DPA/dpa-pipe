@@ -72,6 +72,12 @@ class _PTaskSyncAction(Action):
         )
 
         parser.add_argument(
+            "-w", "--wait",
+            action="store_true",
+            help="Wait for the sync to finish before returning.",
+        )
+
+        parser.add_argument(
             "-f", "--force",
             help="Don't confirm before proceeding.",
             action="store_true",
@@ -86,7 +92,7 @@ class _PTaskSyncAction(Action):
     # ------------------------------------------------------------------------
     def __init__(self, source, destination, source_version=None, 
         destination_version=None, source_directory=None, 
-        destination_directory=None, force=False, delete=False):
+        destination_directory=None, wait=False, force=False, delete=False):
 
         super(_PTaskSyncAction, self).__init__(self,
             source,
@@ -95,6 +101,7 @@ class _PTaskSyncAction(Action):
             destination_version=destination_version,
             source_directory=source_directory,
             destination_directory=destination_directory,
+            wait=wait,
             force=force,
             delete=delete,
         )
@@ -111,6 +118,7 @@ class _PTaskSyncAction(Action):
         self._source_latest_version = None
         self._destination_latest_version = None
 
+        self._wait = wait
         self._force = force
         self._delete = delete
 
@@ -121,6 +129,7 @@ class _PTaskSyncAction(Action):
             sync_action = SyncAction(
                 source=self.source_path,
                 destination=self.destination_path,
+                wait=self.wait,
                 includes=self.includes,
                 excludes=self.excludes,
                 delete=self.delete,
@@ -342,6 +351,11 @@ class _PTaskSyncAction(Action):
     @property
     def force(self):
         return self._force
+
+    # ------------------------------------------------------------------------
+    @property
+    def wait(self):
+        return self._wait
 
     # ------------------------------------------------------------------------
     @property

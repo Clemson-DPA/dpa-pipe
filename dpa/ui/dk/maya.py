@@ -157,8 +157,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             try:
                 self._product_render()
             except Exception as e:
-                import traceback
-                traceback.print_exc()
                 self._show_error(str(e))
             else:
                 super(MayaDarkKnightDialog, self).accept()
@@ -191,6 +189,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             "Product render...", "", cur_op, num_ops, self)
         progress_dialog.setWindowTitle("Dark Knight is busy...")
         progress_dialog.setAutoReset(False)
+        progress_dialog.setLabelText("Preparing maya file for rendering...")
+        progress_dialog.show()
 
         ptask = self._cur_ptask
         ptask_version = self._cur_ptask.version(self._version)
@@ -536,6 +536,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             source=ptask,
             destination=ptask,
             destination_version=latest_ver,
+            wait=True,
         )
         source_action.interactive = False
         source_action()
