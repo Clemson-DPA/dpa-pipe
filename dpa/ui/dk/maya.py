@@ -12,11 +12,17 @@ from dpa.env import EnvVar
 from dpa.env.vars import DpaVars
 from dpa.frange import Frange, FrangeError
 from dpa.imgres import ImgRes, ImgResError
+from dpa.notify import Notification, emails_from_unames
 from dpa.ptask.area import PTaskArea, PTaskAreaError
 from dpa.ptask import PTask
 from dpa.queue import get_unique_id, create_queue_task
 from dpa.ui.dk.base import BaseDarkKnightDialog, DarkKnightError
 from dpa.ui.icon.factory import IconFactory
+from dpa.user import current_username, User
+
+# -----------------------------------------------------------------------------
+
+DK_CONFIG_PATH = "config/notify/dk.cfg"
 
 # -----------------------------------------------------------------------------
 class MayaDarkKnightDialog(BaseDarkKnightDialog):
@@ -105,14 +111,14 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             frange_str = self._manual_frange.text()
                             
         try:                
-            frange = Frange(frange_str)
+            self._frange = Frange(frange_str)
         except FrangeError:
             self._show_error(
                 "Unable to determine frame range from: " + frange_str)
             self.setEnabled(True)
             return
 
-        self._frame_list = frange.frames
+        self._frame_list = self._frange.frames
 
         if not self._frame_list:
             self._show_error("No frames to render.")
@@ -238,13 +244,14 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     shutil.rmtree(rib_dir)
                 except Exception as e:
                     progress_dialog.close()
-                    raise DarkKnightError(
-                        "Unable to clean up ribs: " + str(e))
+                    raise DarkKnightError("Unable to clean up ribs: " + str(e))
 
             cur_op += 1
             progress_dialog.setValue(cur_op)
 
         # ---- construct scripts for the queue
+
+        render_summary = []
 
         for render_layer in render_layers:
 
@@ -269,7 +276,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 progress_dialog.close()
                 raise DarkKnightError("Unable to create product: " + str(e))
 
-            product_repr_area = create_action.product_repr.area
+            product_repr = create_action.product_repr
+            product_repr_area = product_repr.area
 
             progress_dialog.setLabelText(
                 "Provisioning 'queue' directory in product...")
@@ -354,6 +362,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
             frame_tasks = []
 
+            task_id_base = get_unique_id(product_repr_area.spec, dt=now)
+
             # submit the frames to render
             for (frame, frame_script) in frame_scripts:
 
@@ -365,8 +375,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 progress_dialog.setLabelText(
                     "Submitting frame: " + frame_script)
 
-                task_id = get_unique_id(product_repr_area.spec,
-                    id_extra=frame, dt=now)
+                task_id = task_id_base + "_" + frame
 
                 if not self._debug_mode:
 
@@ -425,8 +434,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 progress_dialog.setLabelText(
                     "Submitting rib gen: " + script_path)
 
-                task_id = get_unique_id(product_repr_area.spec,
-                    id_extra='ribs', dt=now)
+                task_id = task_id_base + "_ribs"
 
                 if not self._debug_mode:
 
@@ -440,6 +448,43 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             cur_op += 1
             progress_dialog.setValue(cur_op)
             progress_dialog.close()
+
+            render_summary.append(
+                (render_layer, task_id_base, product_repr, queue_dir))
+
+        if not self._debug_mode:
+
+            # send msg...
+            msg_title = "Queue submission report: " + \
+                now.strftime("%Y/%m/%d %H:%M:%S")
+            msg_body = "Submitted the following tasks for" + \
+                ptask.spec + ":\n\n"
+            msg_body += "  Description: " + self._version_note + "\n"
+            msg_body += "  Resolution: " + self._res_str + "\n"
+            msg_body += "  File type: " + self._file_type + "\n"
+            msg_body += "  Camera: " + self._camera + "\n"
+            if self._generate_ribs:
+                msg_body += "  Rib gen queue: " + self._ribgen_queue + "\n"
+            msg_body += "  Render queue: " + self._render_queue + "\n"
+            msg_body += "  Frames: " + str(self._frange) + "\n"
+            msg_body += "  Rib directory: " + rib_dir + "\n"
+            msg_body += "\n" 
+            for (layer, task_id_base, product_repr, queue_dir) in render_summary:
+                msg_body += "    Render layer: " + layer + "\n"
+                msg_body += "      Base task ID: " + task_id_base + "\n"
+                msg_body += "      Product representation: " + \
+                    product_repr.spec + "\n"
+                msg_body += "      Scripts directory: " + queue_dir + "\n"
+                msg_body += "\n" 
+
+            dk_config = ptask.area.config(DK_CONFIG_PATH, 
+                composite_ancestors=True, composite_method="append")
+            recipients = dk_config.get('notify', [])
+            recipients.append(current_username())
+            recipients = emails_from_unames(recipients)
+            notification = Notification(msg_title, msg_body, recipients,
+                sender=User.current().email)
+            notification.send_email()
 
     # -------------------------------------------------------------------------
     def _get_render_layers(self):
@@ -485,7 +530,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         source_action_class = ActionRegistry().get_action('source', 'ptask')
         if not source_action_class:
-            raise ActionError("Could not find ptask source action.")
+            raise DarkKnightError("Could not find ptask source action.")
 
         source_action = source_action_class(
             source=ptask,
@@ -702,6 +747,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         rem_ribs_lbl = QtGui.QLabel("Remove existing ribs:")
         self._rem_ribs = QtGui.QCheckBox("")
+        self._rem_ribs.setChecked(True)
 
         debug_lbl = QtGui.QLabel("Debug mode:")
         self._debug = QtGui.QCheckBox("")
