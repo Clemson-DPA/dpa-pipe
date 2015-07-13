@@ -363,14 +363,13 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             frame_tasks = []
 
             task_id_base = get_unique_id(product_repr_area.spec, dt=now)
+            if self._generate_ribs:
+                frame_queue = 'hold'
+            else:
+                frame_queue = self._render_queue
 
-            # submit the frames to render
+            # create frame tasks
             for (frame, frame_script) in frame_scripts:
-
-                if self._generate_ribs:
-                    queue = 'hold'
-                else:
-                    queue = self._render_queue
 
                 progress_dialog.setLabelText(
                     "Submitting frame: " + frame_script)
@@ -379,14 +378,19 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                 if not self._debug_mode:
 
-                    create_queue_task(queue, frame_script, task_id,
-                        output_file=out_dir, submit=True, 
+                    # create tasks, don't actually submit yet
+                    create_queue_task(frame_queue, frame_script, task_id,
+                        output_file=out_dir, submit=False, 
                         log_path=frame_script + '.log')
 
                     frame_tasks.append(task_id)
 
                 cur_op += 1
                 progress_dialog.setValue(cur_op)
+
+            # resubmit all at once (workaround for slow individual submissions)
+            os.system("cqresubmittask {qn} {tid}".format(
+                qn=frame_queue, tid=task_id_base))
 
             if self._generate_ribs:
 
