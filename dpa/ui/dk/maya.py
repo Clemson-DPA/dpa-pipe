@@ -299,6 +299,12 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             # set group permissions on project dir, recursively
             os.system("chmod g+rw {pd} -R".format(pd=ver_project))
 
+            # figure out the render layer
+            if render_layer == 'masterLayer':
+                layer_index = self.session.cmds.getAttr("defaultRenderLayer.rlid")
+            else:
+                layer_index = self.session.cmds.getAttr(render_layer + ".rlid")
+
             frame_scripts = []
             for frame in self._frame_list:
 
@@ -316,20 +322,25 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 out_file = os.path.join(out_dir, "{rl}.{fn}.{ft}".\
                     format(rl=render_layer, fn=frame_padded, ft=self._file_type))
 
-                wrong_out_files = os.path.join(out_dir, render_layer,
-                    "{rl}*.{fn}.{ft}".format(
-                        rl=render_layer, fn=frame_padded, ft=self._file_type))
+                simple_rib = "{proj}renderman/{fb}/rib/{fn}/{fn}.rib".format(
+                    proj=ver_project, fb=file_base, fn=frame_padded)
 
-                render_cmd = "Render -r rman -fnc name.#.ext "
-                render_cmd += "-proj {proj} ".format(proj=ver_project)
-                render_cmd += "-s {sf} -e {ef} -b 1 -pad 4 ".format(
-                    sf=frame, ef=frame)
-                render_cmd += '-setAttr Format:resolution "{w} {h}" '.format(
-                    w=self._resolution.width, h=self._resolution.height)
-                render_cmd += "-of OpenEXR "
-                render_cmd += "-cam {cam} ".format(cam=self._camera)
-                render_cmd += "-im {layer} -rd {odir} -rl {layer} {mf} ".format(
-                    layer=render_layer, odir=out_dir, mf=maya_file) 
+                layer_rib = "{proj}renderman/{fb}/rib/{fn}/{fn}_{rl}.rib".\
+                    format(proj=ver_project, fb=file_base, fn=frame_padded,
+                        rl=render_layer)
+
+                render_cmd = "dpa_ribrender -r $RIB_PATH "
+                render_cmd += "-o {od} ".format(od=out_dir)
+                render_cmd += "-f {rl} ".format(rl=render_layer)
+                render_cmd += "-p {proj} ".format(proj=ver_project)
+                render_cmd += "--prman '-t:0 -Progress -cwd \"{proj}\" -fnc name.#.ext -setAttr Format:resolution \"{w} {h}\" -of OpenEXR -cam {cam}' ".\
+                    format(
+                        proj=ver_project,
+                        w=self._resolution.width,
+                        h=self._resolution.height,
+                        cam=self._camera,
+                        layer=render_layer
+                    )
 
                 with open(script_path, "w") as script_file:
                     script_file.write("#!/bin/bash\n\n")
@@ -340,22 +351,25 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     script_file.write("# set the ptask version to render\n")
                     script_file.write(dpaset_cmd + "\n\n")
+
+                    # the logic for determining which rib will be generated is
+                    # unclear at this point. So we'll build a conditional
+                    script_file.write("if [[ -f {lr} ]]; then\n".format(lr=layer_rib))
+                    script_file.write("    export RIB_PATH={lr}\n".format(lr=layer_rib))
+                    script_file.write("else\n")
+                    script_file.write("    export RIB_PATH={sr}\n".format(sr=simple_rib))
+                    script_file.write("fi\n")
+
                     script_file.write("# render!\n")
                     script_file.write(render_cmd + "\n\n")
 
-                    # rman renders to a subdirectory with the render layer name 
-                    # when there are more than one layer. we want the images
-                    # one level up.
-                    if len(render_layers) > 1:
-                        script_file.write("mv {wof} {od}\n\n".format(
-                            wof=wrong_out_files, od=out_dir))
-
                     script_file.write("chmod 660 {of}\n\n".format(
-                        of=os.path.join(out_dir, "*." + self._file_type)))
+                        of=os.path.join(out_dir, 
+                            render_layer + "*." + self._file_type)))
 
                 os.chmod(script_path, 0770)
 
-                frame_scripts.append((frame_padded, script_path))
+                frame_scripts.append((frame_padded, script_path, out_file))
 
                 cur_op += 1
                 progress_dialog.setValue(cur_op)
@@ -369,7 +383,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 frame_queue = self._render_queue
 
             # create frame tasks
-            for (frame, frame_script) in frame_scripts:
+            for (frame, frame_script, out_file) in frame_scripts:
 
                 progress_dialog.setLabelText(
                     "Submitting frame: " + frame_script)
@@ -380,7 +394,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     # create tasks, don't actually submit yet
                     create_queue_task(frame_queue, frame_script, task_id,
-                        output_file=out_dir, submit=False, 
+                        output_file=out_file, submit=False, 
                         log_path=frame_script + '.log')
 
                     frame_tasks.append(task_id)
@@ -410,16 +424,19 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     script_file.write(dpaset_cmd + "\n\n")
                     script_file.write("# generate the ribs...\n")
 
-                    for frame in self._frame_list:
+                    job_rib_cmd = 'maya -batch -proj "{proj}" '.format(
+                        proj=ver_project)
+                    job_rib_cmd += '-command "renderManBatchGenRibForLayer {li} {sf} {ef} 1" '.\
+                        format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
+                    job_rib_cmd += '-file "{mf}"'.format(mf=maya_file)
+                    script_file.write(job_rib_cmd + "\n")
 
-                        rib_cmd = "Render -r rib -fnc name.#.ext "
-                        rib_cmd += "-proj {proj} ".format(proj=ver_project)
-                        rib_cmd += "-cam {cam} ".format(cam=self._camera)
-                        rib_cmd += "-s {sf} -e {ef} -b 1 -pad 4 ".format(
-                            sf=frame, ef=frame)
-                        rib_cmd += "-rl {layer} ".format(layer=render_layer)
-                        rib_cmd += "{mf} ".format(mf=maya_file) 
-                        script_file.write(rib_cmd + "\n")
+                    frames_rib_cmd = 'maya -batch -proj "{proj}" '.format(
+                        proj=ver_project)
+                    frames_rib_cmd += '-command "renderManBatchGenRibForLayer {li} {sf} {ef} 2" '.\
+                        format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
+                    frames_rib_cmd += '-file "{mf}"'.format(mf=maya_file)
+                    script_file.write(frames_rib_cmd + "\n")
 
                     script_file.write(
                         "\n# make sure project dir has group permissions\n")
@@ -474,7 +491,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             # send msg...
             msg_title = "Queue submission report: " + \
                 now.strftime("%Y/%m/%d %H:%M:%S")
-            msg_body = "Submitted the following tasks for" + \
+            msg_body = "Submitted the following tasks for " + \
                 ptask.spec + ":\n\n"
             msg_body += "  Description: " + self._version_note + "\n"
             msg_body += "  Resolution: " + self._res_str + "\n"

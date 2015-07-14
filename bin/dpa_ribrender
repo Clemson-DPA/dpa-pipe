@@ -1,0 +1,123 @@
+#!/usr/bin/python
+
+# Author: Gina Guerrero
+
+import argparse
+import os
+import shlex
+import sys
+
+import prman
+
+# -----------------------------------------------------------------------------
+class RibFilter(prman.Rif):
+    """Custom rib generation filter."""
+
+    # -------------------------------------------------------------------------
+    def __init__(self, ri, output_dir, file_base, project_dir):
+
+        super(RibFilter, self).__init__(ri)
+        self._output_dir = output_dir
+        self._file_base = file_base
+        self._project_dir = project_dir
+
+    # -------------------------------------------------------------------------
+    def Display(self, name, driver, channels, params):
+        """Set the output file location"""
+
+        if driver == 'openexr':
+
+            file_name = os.path.split(name)[-1]
+
+            if self._file_base:
+                file_parts = file_name.split(".")
+                file_parts[0] = self._file_base
+                file_name = ".".join(file_parts)
+                
+            # the output directory with the default file name
+            name = os.path.join(self._output_dir, file_name)
+
+        self.m_ri.Display(name, driver, channels, params)
+
+    # -------------------------------------------------------------------------
+    def ReadArchive(self, rib_file):
+        """Set rib archive location."""
+
+        rib_full_path = os.path.join(self._project_dir, rib_file)
+        rel_rib_path = os.path.relpath(rib_full_path, os.getcwd())
+        self.m_ri.ReadArchive(rel_rib_path)
+
+# -----------------------------------------------------------------------------
+def process_rib(rib_file, output_dir, file_base, project_dir=None, prman_flags=None):
+
+    # initialize the renderman interface
+    ri = prman.Ri()
+    
+    if prman_flags:
+        prman.Init(shlex.split(prman_flags))
+
+    prman.RifInit([RibFilter(ri, output_dir, file_base, project_dir)])
+
+    ri.Begin(ri.RENDER)
+    prman.ParseFile(rib_file)
+    ri.End()
+
+    prman.RifInit([])
+    
+# -----------------------------------------------------------------------------
+def main():
+
+    parser = argparse.ArgumentParser(
+        description="Rib generation from the command line")    
+
+    # rib file 
+    parser.add_argument(
+        "-r", "--rib",
+        metavar="<rib path>",
+        type=str,
+        help="Location to output the generated rib file. (required)",
+        required=True,
+    )
+
+    # image output directory
+    parser.add_argument(
+        "-o", "--output_dir",
+        metavar="<output directory>",
+        type=str,
+        help="Where the images will end up when rendering the rib. (required)",
+        required=True,
+    )
+
+    # image output directory
+    parser.add_argument(
+        "-f", "--file_base",
+        metavar="<file basename>",
+        type=str,
+        help="The base name of the output file.",
+        required=True,
+    )
+    
+    # project dir
+    parser.add_argument(
+        "-p", "--project",
+        metavar="<project directory>",
+        type=str,
+        help="Location to output the generated rib file. (required)",
+    )
+
+    # prman flags
+    parser.add_argument(
+        "--prman",
+        metavar='"<prman flags>"',
+        type=str,
+        help="Flags to forward to prman rib generation.",
+        default=None,
+    )
+
+    args = parser.parse_args()
+    process_rib(args.rib, args.output_dir, args.file_base, args.project, args.prman)
+
+# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    main()
+
