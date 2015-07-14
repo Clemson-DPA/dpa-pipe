@@ -54,6 +54,7 @@ SCRIPTS = [
     'bin/dpa',
     'bin/dpa_houdini',
     'bin/dpa_uncompress',
+    'bin/dpa_ribrender',
 ]
 
 URL = "" # XXX once uploaded to git or bitbucket, set this
