@@ -207,7 +207,24 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         # set lazy rib gen before save/sync
         self.session.cmds.setAttr("renderManGlobals.rman__toropt___lazyRibGen",
             True)
-        
+        self.session.cmds.setAttr('defaultResolution.width', self._resolution.width)
+        self.session.cmds.setAttr('defaultResolution.height', self._resolution.height)
+        # hardcoded for now... yeah!
+        self.session.cmds.setAttr("rmanFinalOutputGlobals0.rman__riopt__Display_type",
+            "openexr", type="string")
+            
+        #self.session.cmds.setAttr('rmanFinalGlobals.rman__torattr___passNameFormat', )
+        #self.session.cmds.setAttr('rmanFinalGlobals.rman__torattr___passExtFormat', )
+
+        cam_shape_list = self.session.cmds.ls(cameras=True)
+        for cam_shape in cam_shape_list:
+            cam_name = str(
+                self.session.cmds.listRelatives(cam_shape, parent=True)[0])
+            if cam_name == self._camera:
+                self.session.cmds.setAttr(cam_shape + ".renderable", 1)
+            else:
+                self.session.cmds.setAttr(cam_shape + ".renderable", 0)
+
         # ---- sync current work area to version snapshot to render from
 
         cur_project = self.session.cmds.workspace(query=True, rootDirectory=True)
@@ -333,14 +350,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 render_cmd += "-o {od} ".format(od=out_dir)
                 render_cmd += "-f {rl} ".format(rl=render_layer)
                 render_cmd += "-p {proj} ".format(proj=ver_project)
-                render_cmd += "--prman '-t:0 -Progress -cwd \"{proj}\" -fnc name.#.ext -setAttr Format:resolution \"{w} {h}\" -of OpenEXR -cam {cam}' ".\
-                    format(
-                        proj=ver_project,
-                        w=self._resolution.width,
-                        h=self._resolution.height,
-                        cam=self._camera,
-                        layer=render_layer
-                    )
+                render_cmd += "--prman '-t:0 -Progress -cwd \"{proj}\"' ".\
+                    format(proj=ver_project)
 
                 with open(script_path, "w") as script_file:
                     script_file.write("#!/bin/bash\n\n")
