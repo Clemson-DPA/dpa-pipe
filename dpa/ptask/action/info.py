@@ -165,6 +165,8 @@ class PTaskInfoAction(Action):
 
         version_number = "Version"
         description = "Description"
+        created = "Created"
+        creator = "Creator"
         location = "Location"
         parent = "Source"
         
@@ -175,6 +177,8 @@ class PTaskInfoAction(Action):
         output.header_names = [
             version_number,
             description,
+            created,
+            creator,
             location,
             parent,
         ]
@@ -188,6 +192,7 @@ class PTaskInfoAction(Action):
 
             parent_num = version.parent_spec
 
+
             if parent_num:
                 (parent_ptask_spec, parent_ver) = parent_num.split("@")
                 if parent_ptask_spec == self.ptask.spec:
@@ -197,6 +202,8 @@ class PTaskInfoAction(Action):
                 {
                     version_number: version.number_padded,
                     description: version.description,
+                    created: version.created.strftime("%Y/%m/%d %H:%M:%S"),
+                    creator: version.creator_username,
                     location: version.location_code,
                     parent: parent_num,
                 },

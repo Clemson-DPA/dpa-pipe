@@ -183,6 +183,9 @@ class SubscriptionUpdateAction(Action):
             # all subs for ptask version
             subs.extend(self._ptask_version.subscriptions)
 
+        if not subs:
+            raise ActionAborted("No subscriptions to udpate!")
+
         self._subs = subs
 
         update_map = defaultdict(dict)
