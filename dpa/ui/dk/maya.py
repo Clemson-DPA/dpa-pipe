@@ -314,7 +314,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
             # dpaset command to run
             dpaset_cmd = 'eval "`dpa env ptask {pt}@{vn}`"'.format(
-                pt=ptask_spec, vn=ptask_version.number)
+                pt=ptask.spec, vn=ptask_version.number)
             
             # set group permissions on project dir, recursively
             os.system("chmod g+rw {pd} -R".format(pd=ver_project))

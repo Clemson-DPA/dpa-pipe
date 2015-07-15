@@ -846,10 +846,15 @@ def _get_terminal_size():
 def _get_terminal_size_posix():
     """Returns a tuple for the terminal size on a posix system."""
 
-    width = int(os.popen('tput cols', 'r').readline())
-    height = int(os.popen('tput lines', 'r').readline())
+    width = os.popen('tput cols', 'r').readline()
+    height = os.popen('tput lines', 'r').readline()
+
+    if not width:
+        width = 80
+    if not height:
+        height = 25
  
-    return (width, height)
+    return (int(width), int(height))
  
 # -----------------------------------------------------------------------------
 def _get_terminal_size_windows():
