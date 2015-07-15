@@ -210,15 +210,16 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         self.session.cmds.setAttr('defaultResolution.width', self._resolution.width)
         self.session.cmds.setAttr('defaultResolution.height', self._resolution.height)
 
-        # XXX hardcoded for now... yeah!
-        self.session.cmds.setAttr("rmanFinalOutputGlobals0.rman__riopt__Display_type",
+        if self._file_type == 'exr':
+            self.session.cmds.setAttr("rmanFinalOutputGlobals0.rman__riopt__Display_type",
             "openexr", type="string")
-            
-        # XXX figure out how to set the output file format
-        #self.session.cmds.setAttr('rmanFinalGlobals.rman__torattr___passNameFormat', )
-        #self.session.cmds.setAttr('rmanFinalGlobals.rman__torattr___passExtFormat', )
 
-        # XXX get the proper renderable camera
+        # set the output file naming convention to name.#.ext
+        self.session.cmds.setAttr("defaultRenderGlobals.animation", True)
+        self.session.cmds.setAttr("defaultRenderGlobals.putFrameBeforeExt", True)
+        self.session.cmds.setAttr("defaultRenderGlobals.outFormatControl", False)
+
+        # set all other cameras to not be renderable (this seems to work)
         cam_shape_list = self.session.cmds.ls(cameras=True)
         for cam_shape in cam_shape_list:
             cam_name = str(
