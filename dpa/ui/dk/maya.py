@@ -209,13 +209,16 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             True)
         self.session.cmds.setAttr('defaultResolution.width', self._resolution.width)
         self.session.cmds.setAttr('defaultResolution.height', self._resolution.height)
-        # hardcoded for now... yeah!
+
+        # XXX hardcoded for now... yeah!
         self.session.cmds.setAttr("rmanFinalOutputGlobals0.rman__riopt__Display_type",
             "openexr", type="string")
             
+        # XXX figure out how to set the output file format
         #self.session.cmds.setAttr('rmanFinalGlobals.rman__torattr___passNameFormat', )
         #self.session.cmds.setAttr('rmanFinalGlobals.rman__torattr___passExtFormat', )
 
+        # XXX get the proper renderable camera
         cam_shape_list = self.session.cmds.ls(cameras=True)
         for cam_shape in cam_shape_list:
             cam_name = str(
@@ -310,9 +313,9 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             queue_dir = product_repr_area.dir(dir_name='queue')
 
             # dpaset command to run
-            dpaset_cmd = "dpaset {pt}@{vn}".format(pt=ptask.spec,
-                vn=ptask_version.number)
-
+            dpaset_cmd = 'eval "`dpa env ptask {pt}@{vn}`"'.format(
+                pt=ptask_spec, vn=ptask_version.number)
+            
             # set group permissions on project dir, recursively
             os.system("chmod g+rw {pd} -R".format(pd=ver_project))
 
@@ -350,18 +353,19 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 render_cmd += "-o {od} ".format(od=out_dir)
                 render_cmd += "-f {rl} ".format(rl=render_layer)
                 render_cmd += "-p {proj} ".format(proj=ver_project)
-                render_cmd += "--prman '-t:0 -Progress -cwd \"{proj}\"' ".\
+                render_cmd += "--prman '-t:0 -cwd \"{proj}\"' ".\
                     format(proj=ver_project)
 
                 with open(script_path, "w") as script_file:
                     script_file.write("#!/bin/bash\n\n")
 
                     # XXX these should happen automatically in the queue...
-                    script_file.write("source /DPA/moosefs/dpa/bash/startup.bash\n")
+                    script_file.write("source /DPA/wookie/dpa/bash/startup.bash\n")
                     script_file.write("pipeup\n\n")
 
                     script_file.write("# set the ptask version to render\n")
-                    script_file.write(dpaset_cmd + "\n\n")
+                    script_file.write(dpaset_cmd + "\n")
+                    script_file.write("cd " + ver_project + "\n\n")
 
                     # the logic for determining which rib will be generated is
                     # unclear at this point. So we'll build a conditional
@@ -428,11 +432,13 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     script_file.write("#!/bin/bash\n\n")
 
                     # XXX these should happen automatically in the queue...
-                    script_file.write("source /DPA/moosefs/dpa/bash/startup.bash\n")
+                    script_file.write("source /DPA/wookie/dpa/bash/startup.bash\n")
                     script_file.write("pipeup\n\n")
 
                     script_file.write("# set the ptask version to render\n")
-                    script_file.write(dpaset_cmd + "\n\n")
+                    script_file.write(dpaset_cmd + "\n")
+                    script_file.write("cd " + ver_project + "\n\n")
+
                     script_file.write("# generate the ribs...\n")
 
                     job_rib_cmd = 'maya -batch -proj "{proj}" '.format(
