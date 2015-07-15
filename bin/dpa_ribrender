@@ -39,14 +39,6 @@ class RibFilter(prman.Rif):
 
         self.m_ri.Display(name, driver, channels, params)
 
-    # -------------------------------------------------------------------------
-    def ReadArchive(self, rib_file):
-        """Set rib archive location."""
-
-        rib_full_path = os.path.join(self._project_dir, rib_file)
-        rel_rib_path = os.path.relpath(rib_full_path, os.getcwd())
-        self.m_ri.ReadArchive(rel_rib_path)
-
 # -----------------------------------------------------------------------------
 def process_rib(rib_file, output_dir, file_base, project_dir=None, prman_flags=None):
 
