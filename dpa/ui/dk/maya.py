@@ -404,7 +404,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 progress_dialog.setLabelText(
                     "Submitting frame: " + frame_script)
 
-                task_id = task_id_base + "_" + frame
+                task_id = task_id_base + "_f" + frame
 
                 if not self._debug_mode:
 
@@ -463,9 +463,13 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     # submit the frames to render
                     script_file.write("# Submit frames after rib gen \n")
-                    for frame_task in frame_tasks:
-                        script_file.write("cqmovetask {qn} {tid}\n".format(
-                            qn=self._render_queue, tid=frame_task))
+                    #for frame_task in frame_tasks:
+                        #script_file.write("cqmovetask {qn} {tid}\n".format(
+                            #qn=self._render_queue, tid=frame_task))
+                    
+                    # changed to move group, still added Josh's recommended _f####
+                    script_file.write("cqmovetask {qn} {tid}\n".format(
+                        qn=self._render_queue, tid=task_id_base + '_f'))
 
                 os.chmod(script_path, 0770)
 
