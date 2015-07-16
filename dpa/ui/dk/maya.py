@@ -404,7 +404,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 progress_dialog.setLabelText(
                     "Submitting frame: " + frame_script)
 
-                task_id = task_id_base + "_f" + frame
+                task_id = task_id_base + "_" + frame
 
                 if not self._debug_mode:
 
@@ -467,9 +467,9 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                         #script_file.write("cqmovetask {qn} {tid}\n".format(
                             #qn=self._render_queue, tid=frame_task))
                     
-                    # changed to move group, still added Josh's recommended _f####
+                    # changed to move group
                     script_file.write("cqmovetask {qn} {tid}\n".format(
-                        qn=self._render_queue, tid=task_id_base + '_f'))
+                        qn=self._render_queue, tid=task_id_base))
 
                 os.chmod(script_path, 0770)
 
