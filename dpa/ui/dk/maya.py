@@ -352,6 +352,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                 render_cmd = "dpa_ribrender -r $RIB_PATH "
                 render_cmd += "-o {od} ".format(od=out_dir)
+                # For Josh: I'm altering how this works in dpa_ribrender
                 render_cmd += "-f {rl} ".format(rl=render_layer)
                 render_cmd += "-p {proj} ".format(proj=ver_project)
                 render_cmd += "--prman '-t:0 -cwd \"{proj}\"' ".\

@@ -31,7 +31,14 @@ class RibFilter(prman.Rif):
 
             if self._file_base:
                 file_parts = file_name.split(".")
-                file_parts[0] = self._file_base
+                # This really needed to be re-thought...
+                # Currently, it doesn't take multiple outputs into consideration
+                # So I'm altering it for a quick fix for now, because
+                # it's causing problems for roomba atm.
+                # file_parts[0] = self._file_base
+                name_parts = file_parts[0].split("_")
+                name_parts[0] = self._file_base
+                file_parts[0] = "_".join(name_parts)
                 file_name = ".".join(file_parts)
                 
             # the output directory with the default file name
