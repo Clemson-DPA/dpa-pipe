@@ -352,6 +352,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                 render_cmd = "dpa_ribrender -r $RIB_PATH "
                 render_cmd += "-o {od} ".format(od=out_dir)
+                # For Josh: I'm altering how this works in dpa_ribrender
                 render_cmd += "-f {rl} ".format(rl=render_layer)
                 render_cmd += "-p {proj} ".format(proj=ver_project)
                 render_cmd += "--prman '-t:0 -cwd \"{proj}\"' ".\
@@ -463,9 +464,13 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     # submit the frames to render
                     script_file.write("# Submit frames after rib gen \n")
-                    for frame_task in frame_tasks:
-                        script_file.write("cqmovetask {qn} {tid}\n".format(
-                            qn=self._render_queue, tid=frame_task))
+                    #for frame_task in frame_tasks:
+                        #script_file.write("cqmovetask {qn} {tid}\n".format(
+                            #qn=self._render_queue, tid=frame_task))
+                    
+                    # changed to move group
+                    script_file.write("cqmovetask {qn} {tid}\n".format(
+                        qn=self._render_queue, tid=task_id_base))
 
                 os.chmod(script_path, 0770)
 
