@@ -58,6 +58,8 @@ def process_rib(rib_file, output_dir, file_base, project_dir=None, prman_flags=N
     prman.RifInit([RibFilter(ri, output_dir, file_base, project_dir)])
 
     ri.Begin(ri.RENDER)
+    # Im so sorry guys
+    ri.ErrorHandler(ri.PRINT)
     prman.ParseFile(rib_file)
     ri.End()
 
