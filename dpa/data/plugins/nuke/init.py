@@ -75,8 +75,8 @@ def _import_nuke_plugins():
 _populate_sys_path()
 
 # register NukeSession with SessionFactory
-#print "Loading NukeSession"
-#import dpa.nuke.session
+print "Loading NukeSession"
+import dpa.nuke.session
 
 # register Nuke Entityies
 #print "Loading Nuke Entities"
