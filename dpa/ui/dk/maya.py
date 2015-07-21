@@ -415,13 +415,24 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                         log_path=frame_script + '.log')
 
                     frame_tasks.append(task_id)
+                    #
+                    #  resubmit frame-by-frame because 
+                    #  group submit seems to be occasionally
+                    #  having problems.
+                    os.system("cqresubmittask {qn} {tid}".format(
+                        qn=frame_queue, tid=task_id))
+                    
 
                 cur_op += 1
                 progress_dialog.setValue(cur_op)
 
             # resubmit all at once (workaround for slow individual submissions)
-            os.system("cqresubmittask {qn} {tid}".format(
-                qn=frame_queue, tid=task_id_base))
+            #
+            #  This approach seems to be having problems with the server
+            #  communications.  Switch to frame-by-frame resubmit because
+            #  that has worked where this fails
+            #os.system("cqresubmittask {qn} {tid}".format(
+            #    qn=frame_queue, tid=task_id_base))
 
             if self._generate_ribs:
 
