@@ -8,6 +8,7 @@ import shutil
 from PySide import QtCore, QtGui
 
 from dpa.action.registry import ActionRegistry
+from dpa.config import Config
 from dpa.env import EnvVar
 from dpa.env.vars import DpaVars
 from dpa.frange import Frange, FrangeError
@@ -312,6 +313,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     "Unable to create queue scripts directory: " + str(e))
 
             queue_dir = product_repr_area.dir(dir_name='queue')
+            tasks_info_file = os.path.join(queue_dir, 'tasks_info.cfg')
+            tasks_info_config = Config()
 
             # dpaset command to run
             dpaset_cmd = 'eval "`dpa env ptask {pt}@{vn}`"'.format(
@@ -394,6 +397,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             frame_tasks = []
 
             task_id_base = get_unique_id(product_repr_area.spec, dt=now)
+            tasks_info_config.add('base_id', task_id_base)
+
             if self._generate_ribs:
                 frame_queue = 'hold'
             else:
@@ -414,17 +419,21 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                         output_file=out_file, submit=False, 
                         log_path=frame_script + '.log')
 
-                    frame_tasks.append(task_id)
+                    frame_tasks.append((frame, task_id))
                     #
                     #  resubmit frame-by-frame because 
                     #  group submit seems to be occasionally
                     #  having problems.
                     os.system("cqresubmittask {qn} {tid}".format(
                         qn=frame_queue, tid=task_id))
-                    
 
                 cur_op += 1
                 progress_dialog.setValue(cur_op)
+
+            frame_info = Config()
+            for (frame, task_id) in frame_tasks:
+                frame_info.add(str(frame), task_id)
+            tasks_info_config.add('frame_ids', frame_info)
 
             # resubmit all at once (workaround for slow individual submissions)
             #
@@ -475,7 +484,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     # submit the frames to render
                     script_file.write("# Submit frames after rib gen \n")
-                    #for frame_task in frame_tasks:
+                    #for (frame, frame_task) in frame_tasks:
                         #script_file.write("cqmovetask {qn} {tid}\n".format(
                             #qn=self._render_queue, tid=frame_task))
                     
@@ -490,6 +499,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     "Submitting rib gen: " + script_path)
 
                 task_id = task_id_base + "_ribs"
+                tasks_info_config.add('ribgen_id', task_id)
 
                 if not self._debug_mode:
 
@@ -519,6 +529,9 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 db = DPAWrangler.GetWranglingDB()
                 db.set(wrangle.baseId, wrangle)
                 DPAWrangler.AssignWranglerTask("none", task_id_base)
+
+        tasks_info_config.write(tasks_info_file)
+        os.chmod(tasks_info_file, 0660)
 
         if not self._debug_mode:
 
