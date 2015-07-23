@@ -11,6 +11,8 @@ import subprocess
 import sys
 import traceback
 
+import nuke
+
 # -----------------------------------------------------------------------------
 def _populate_sys_path():
 

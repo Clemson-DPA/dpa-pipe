@@ -4,6 +4,9 @@ import nuke
 from dpa.ptask.area import PTaskArea
 from dpa.ui.icon.factory import IconFactory
 
+print "Loading DPA Nuke nodes..."
+import dpa.nuke.nodes
+
 # -----------------------------------------------------------------------------
 
 NUKE_TOOLBAR_CONFIG = 'config/nuke/toolbars.cfg'

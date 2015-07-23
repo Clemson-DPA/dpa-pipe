@@ -530,8 +530,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 db.set(wrangle.baseId, wrangle)
                 DPAWrangler.AssignWranglerTask("none", task_id_base)
 
-        tasks_info_config.write(tasks_info_file)
-        os.chmod(tasks_info_file, 0660)
+            tasks_info_config.write(tasks_info_file)
+            os.chmod(tasks_info_file, 0660)
 
         if not self._debug_mode:
 
