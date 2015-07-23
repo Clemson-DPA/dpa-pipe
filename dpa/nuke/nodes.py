@@ -33,6 +33,7 @@ def create_product_before_render():
 
     product_name = node['product_name'].value()
     product_desc = node['product_desc'].value()
+    product_ver_note = node['product_ver_note'].value()
 
     if not product_desc:
         raise Exception("Please enter a product description.")
@@ -53,6 +54,7 @@ def create_product_before_render():
         description=product_desc,
         file_type=file_type,
         resolution=resolution,
+        note=product_ver_note,
     )
 
     try:
@@ -107,14 +109,17 @@ def create_write_product_node():
     node.addKnob(nuke.EvalString_Knob('product_desc', 'description', ""))
     node.addKnob(nuke.EvalString_Knob('product_name', 'name', 
         get_default_product_name()))
+    node.addKnob(nuke.EvalString_Knob('product_ver_note', 'description', ""))
 
     # hide the file knob
     node.knob('file').setVisible(False)
     node.knob('file_type').setValue('exr')
+    node.knob('product_ver_note').setVisible(False)
 
 # -----------------------------------------------------------------------------
 # Adding the custom nodes here...
 
+# XXX needs to go into a function
 nuke.menu('Nodes').addCommand(
     name='Image/WriteProduct',
     command=create_write_product_node,
