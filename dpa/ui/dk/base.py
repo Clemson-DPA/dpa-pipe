@@ -3,6 +3,7 @@
 
 from PySide import QtCore, QtGui
 
+from dpa.action.registry import ActionRegistry
 from dpa.frange import Frange, FrangeError
 from dpa.ui.app.session import SessionDialog
 from dpa.ui.icon.factory import IconFactory

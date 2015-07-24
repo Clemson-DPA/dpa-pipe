@@ -87,3 +87,6 @@ import dpa.nuke.session
 print "Loading DPA nuke plugins..."
 _import_nuke_plugins()
 
+print "Loading nuke utils..."
+import dpa.nuke.utils
+

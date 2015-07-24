@@ -2,11 +2,13 @@
 # -----------------------------------------------------------------------------
 
 import datetime
+import os
 
 from PySide import QtCore, QtGui
 
 from dpa.config import Config
 from dpa.notify import Notification, emails_from_unames
+from dpa.nuke.utils import create_product_before_render
 from dpa.ptask.area import PTaskArea, PTaskAreaError
 from dpa.ptask import PTask
 from dpa.queue import get_unique_id, create_queue_task
@@ -73,10 +75,13 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
             self.setEnabled(True)
             return
 
+        self._frame_list = self._frange.frames
+
         self._render_queue = self._render_queues.currentText()
         self._version_note = self._version_note_edit.text()
         self._node_to_render = self._write_node_select.itemData(
             self._write_node_select.currentIndex())
+        self._debug_mode = self._debug.isChecked()
 
         if not self._version_note:
             self._show_error("Please specify a description of " + 
@@ -97,11 +102,30 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
     # -------------------------------------------------------------------------
     def _render_to_product(self):
 
-        # XXX need to create product via same call to beforeRender...
-        # it should return a product_repr
-
+        # add the version note for the product
         render_node = self.session.nuke.toNode(self._node_to_render)
         render_node['product_ver_note'].setValue(self._version_note)
+
+        # ---- progress dialog
+
+        num_ops = 6
+        cur_op = 0
+
+        progress_dialog = QtGui.QProgressDialog(
+            "Product render...", "", cur_op, num_ops, self)
+        progress_dialog.setWindowTitle("Dark Knight is busy...")
+        progress_dialog.setAutoReset(False)
+        progress_dialog.setLabelText("Preparing nuke file for rendering...")
+        progress_dialog.show()
+
+        # ensure the product has been created
+        progress_dialog.setLabelText("Creating product...")
+
+        product_repr = create_product_before_render(node=render_node)
+        product_repr_area = product_repr.area
+
+        cur_op += 1
+        progress_dialog.setValue(cur_op)
 
         # get timestamp for all the tasks being submitted
         now = datetime.datetime.now()
@@ -118,12 +142,13 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
         ver_dir = ptask_area.dir(version=ptask_version.number)
 
         nuke_file = self.session.nuke.root().name()
-        nuke_dir = os.path.dirname(nuke_file)
-        ver_nuke_dir = nuke_dir.replace(ptask_dir, ver_dir)
+        nuke_file = nuke_file.replace(ptask_dir, ver_dir)
 
         file_base = os.path.splitext(os.path.split(nuke_file)[1])[0]
 
         # ---- sync current work area to version snapshot to render from
+
+        progress_dialog.setLabelText("Sync'ing the latest work...")
 
         try:
             self.session.save() 
@@ -134,19 +159,27 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
             progress_dialog.close()
             return
 
+        cur_op += 1
+        progress_dialog.setValue(cur_op)
+
         # make sure queue directory exists 
+
+        progress_dialog.setLabelText("Provisioning the queue directory...")
+
         try:
-            ptask_area.provision(version=ptask_version.number, 'queue')
+            product_repr_area.provision('queue')
         except Exception as e:
-            progress_dialog.close()
             raise DarkKnightError(
                 "Unable to create queue scripts directory: " + str(e))
 
-        queue_dir = ptask_area.dir(version=ptask_version.number,
-            dir_name='queue')
+        cur_op += 1
+        progress_dialog.setValue(cur_op)
 
+        queue_dir = product_repr_area.dir(dir_name='queue')
         tasks_info_file = os.path.join(queue_dir, 'tasks_info.cfg')
         tasks_info_config = Config()
+
+        progress_dialog.setLabelText("Building the queue script...")
 
         # dpaset command to run
         dpaset_cmd = 'eval "`dpa env ptask {pt}@{vn}`"'.format(
@@ -158,7 +191,7 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
             "{pn}.{fr}.sh".format(pn=render_node['product_name'].value(),
                 fr=frange_str))
 
-        render_cmd = "nuke --cont -f -F {fs}-{fe}x{step} -X {rn} -t {nf}".\
+        render_cmd = "nuke --cont -f -F {fs}-{fe}x{step} -X {rn} -V 2 -x {nf}".\
             format(
                 fs=self._frange.start,
                 fe=self._frange.end,
@@ -175,40 +208,52 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
             script_file.write("pipeup\n\n")
 
             script_file.write("# set the ptask version to render\n")
-            script_file.write(dpaset_cmd + "\n")
-            script_file.write("cd " + ver_nuke_dir + "\n\n")
+            script_file.write(dpaset_cmd + "\n\n")
 
             script_file.write("# render!\n")
             script_file.write(render_cmd + "\n\n")
 
         os.chmod(script_path, 0770)
-            
-        task_id = get_unique_id(product_repr_area, dt=now)
-        tasks_info_config.add('task_id', task_id_base)
 
-        # XXX debug mode?
+        cur_op += 1
+        progress_dialog.setValue(cur_op)
+            
+        task_id = get_unique_id(product_repr_area.spec, dt=now)
+        task_id += "_" + frange_str
+
+        tasks_info_config.add('task_id', task_id)
+
+
         if not self._debug_mode:
+
+            progress_dialog.setLabelText("Submitting to the queue...")
+
             create_queue_task(self._render_queue, script_path, 
                 task_id, output_file=product_repr_area.dir(),
                 submit=True, log_path=script_path + '.log')
 
-            # ---- dpa specific queue stuff            
-
-            from cheesyq import DPAWrangler
-
-            # create wrangling ticket 
-            wrangle = DPAWrangler.WrangleRecord(task_id_base)
-            wrangle.frames = self._frame_list
-            db = DPAWrangler.GetWranglingDB()
-            db.set(wrangle.baseId, wrangle)
-            DPAWrangler.AssignWranglerTask("none", task_id_base)
-
         tasks_info_config.write(tasks_info_file)
         os.chmod(tasks_info_file, 0660)
 
+        cur_op += 1
+        progress_dialog.setValue(cur_op)
+
         if not self._debug_mode:
 
-            # XXX msg title, body...
+            progress_dialog.setLabelText("Sending submission report...")
+
+            # send msg...
+            msg_title = "Queue submission report: " + \
+                now.strftime("%Y/%m/%d %H:%M:%S")
+            msg_body = "Submitted the following task for " + \
+                ptask.spec + ":\n\n"
+            msg_body += "  Product representation: " + product_repr.spec + "\n"
+            msg_body += "  Description: " + self._version_note + "\n"
+            msg_body += "  Render queue: " + self._render_queue + "\n"
+            msg_body += "  Frames: " + str(self._frange) + "\n"
+            msg_body += "      Task ID: " + task_id + "\n"
+            msg_body += "      Scripts directory: " + queue_dir + "\n"
+            msg_body += "\n"
 
             dk_config = ptask.area.config(DK_CONFIG_PATH, 
                 composite_ancestors=True, composite_method="append")
@@ -218,6 +263,10 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
             notification = Notification(msg_title, msg_body, recipients,
                 sender=User.current().email)
             notification.send_email()
+
+        cur_op += 1
+        progress_dialog.setValue(cur_op)
+        progress_dialog.close()
 
     # -------------------------------------------------------------------------
     def _setup_controls(self):
@@ -273,6 +322,13 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
         self._render_queues = QtGui.QComboBox()
         self._render_queues.addItems(self.__class__.RENDER_QUEUES)
 
+        # ---- debug 
+
+        debug_lbl = QtGui.QLabel("Debug mode:")
+        self._debug = QtGui.QCheckBox("")
+
+        # ---- layout the controls
+
         controls_layout.addWidget(version_note_lbl, 0, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._version_note_edit, 0, 1)
         controls_layout.addWidget(write_node_lbl, 1, 0, QtCore.Qt.AlignRight)
@@ -282,6 +338,9 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
         controls_layout.addWidget(self._frange_btn, 2, 2, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(render_queue_lbl, 3, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._render_queues, 3, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(debug_lbl, 4, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._debug, 4, 1, QtCore.Qt.AlignLeft)
+        controls_layout.setColumnStretch(2, 1000)
         
         controls_vbox = QtGui.QVBoxLayout()
         controls_vbox.addLayout(controls_layout)
