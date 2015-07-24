@@ -4,8 +4,7 @@ import nuke
 from dpa.ptask.area import PTaskArea
 from dpa.ui.icon.factory import IconFactory
 
-print "Loading DPA Nuke nodes..."
-import dpa.nuke.nodes
+from dpa.nuke.nodes import add_commands
 
 # -----------------------------------------------------------------------------
 
@@ -36,5 +35,9 @@ def load_toolbars():
                 tooltip=tooltip)
 
 # -----------------------------------------------------------------------------
+
 load_toolbars()
+
+print "Loading DPA Nuke nodes..."
+add_commands()
 
