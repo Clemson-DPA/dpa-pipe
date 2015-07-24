@@ -9,9 +9,6 @@ from PySide import QtCore, QtGui
 
 from dpa.action.registry import ActionRegistry
 from dpa.config import Config
-from dpa.env import EnvVar
-from dpa.env.vars import DpaVars
-from dpa.frange import Frange, FrangeError
 from dpa.imgres import ImgRes, ImgResError
 from dpa.notify import Notification, emails_from_unames
 from dpa.ptask.area import PTaskArea, PTaskAreaError
@@ -100,22 +97,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         # ---- frame range
 
-        # auto frame range 
-        if self._frange_stack.currentIndex() == 0:
-                            
-            frange_str = str(self._frame_start.value()) + "-" + \
-                str(self._frame_end.value()) + ":" + \
-                str(self._frame_step.value())
-                            
-        # manual frame range
-        else:
-            frange_str = self._manual_frange.text()
-                            
-        try:                
-            self._frange = Frange(frange_str)
-        except FrangeError:
-            self._show_error(
-                "Unable to determine frame range from: " + frange_str)
+        self._frange = self._get_frange_from_controls()
+        if not self._frange:
             self.setEnabled(True)
             return
 
@@ -593,36 +576,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         return render_layers
 
     # -------------------------------------------------------------------------
-    def _show_error(self, msg):
-        
-        error_dialog = QtGui.QErrorMessage(self)
-        error_dialog.setWindowTitle("TDK Errors")
-        error_dialog.showMessage(msg)
-
-    # -------------------------------------------------------------------------
-    def _sync_latest(self):
-
-        ptask = self.session.ptask
-        area = self.session.ptask_area
-        latest_ver = ptask.latest_version
-
-        area.provision(
-            area.dir(version=latest_ver.number, verify=False))
-
-        source_action_class = ActionRegistry().get_action('source', 'ptask')
-        if not source_action_class:
-            raise DarkKnightError("Could not find ptask source action.")
-
-        source_action = source_action_class(
-            source=ptask,
-            destination=ptask,
-            destination_version=latest_ver,
-            wait=True,
-        )
-        source_action.interactive = False
-        source_action()
-
-    # -------------------------------------------------------------------------
     def _output_options(self):
 
         output_type_lbl = QtGui.QLabel("Output:")
@@ -751,65 +704,16 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         self._cameras = QtGui.QComboBox()
         self._cameras.addItems(cam_list)
 
-        frange_lbl = QtGui.QLabel("Frame range:")
-
-        min_time = self.session.cmds.playbackOptions(query=True, minTime=True)
-        max_time = self.session.cmds.playbackOptions(query=True, maxTime=True)
 
         start_time = self.session.cmds.getAttr('defaultRenderGlobals.startFrame')
         end_time = self.session.cmds.getAttr('defaultRenderGlobals.endFrame')
 
-        self._frame_start = QtGui.QSpinBox()
-        self._frame_start.setMinimum(min_time)
-        self._frame_start.setMaximum(max_time)
-        self._frame_start.setValue(int(start_time))
-        self._frame_start.setFixedWidth(50)
+        min_time = self.session.cmds.playbackOptions(query=True, minTime=True)
+        max_time = self.session.cmds.playbackOptions(query=True, maxTime=True)
 
-        frame_to = QtGui.QLabel("to")
-
-        self._frame_end = QtGui.QSpinBox()
-        self._frame_end.setMinimum(min_time)
-        self._frame_end.setMaximum(max_time)
-        self._frame_end.setValue(int(end_time))
-        self._frame_end.setFixedWidth(50)
-
-        frame_by = QtGui.QLabel("by")
-
-        self._frame_step = QtGui.QSpinBox()
-        self._frame_step.setValue(1)
-        self._frame_step.setFixedWidth(50)
-
-        auto_frange_layout = QtGui.QHBoxLayout()
-        auto_frange_layout.setContentsMargins(0, 0, 0, 0)
-        auto_frange_layout.setSpacing(4)
-        auto_frange_layout.addWidget(self._frame_start)
-        auto_frange_layout.addWidget(frame_to)
-        auto_frange_layout.addWidget(self._frame_end)
-        auto_frange_layout.addWidget(frame_by)
-        auto_frange_layout.addWidget(self._frame_step)
-
-        auto_frange = QtGui.QWidget()
-        auto_frange.setLayout(auto_frange_layout)
-
-        self._manual_frange = QtGui.QLineEdit(
-            str(int(start_time)) + "-" + str(int(end_time)))
-        self._manual_frange.setFixedHeight(22)
-
-        self._frange_stack = QtGui.QStackedWidget()
-        self._frange_stack.addWidget(auto_frange)
-        self._frange_stack.addWidget(self._manual_frange)
-
-        edit_icon_path = IconFactory().disk_path("icon:///images/icons/edit_32x32.png")
-
-        frange_btn = QtGui.QPushButton()
-        frange_btn_size = QtCore.QSize(22, 22)
-        frange_btn.setFlat(True)
-        frange_btn.setCheckable(True)
-        frange_btn.setFixedSize(frange_btn_size)
-        frange_btn.setIcon(QtGui.QIcon(edit_icon_path))
-        frange_btn.setIconSize(frange_btn_size)
-        frange_btn.toggled.connect(
-            lambda c: self._frange_stack.setCurrentIndex(int(c)))
+        frange_lbl = QtGui.QLabel("Frame range:")
+        self._make_frame_range_controls(
+            min_time, max_time, start_time, end_time) 
 
         render_queue_lbl = QtGui.QLabel("Render queue:")
         self._render_queues = QtGui.QComboBox()
@@ -838,7 +742,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         controls_layout.addWidget(self._version_note_edit, 0, 1)
         controls_layout.addWidget(frange_lbl, 1, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._frange_stack, 1, 1, QtCore.Qt.AlignLeft)
-        controls_layout.addWidget(frange_btn, 1, 2, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(self._frange_btn, 1, 2, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(file_res_lbl, 2, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._file_res, 2, 1, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(file_types_lbl, 3, 0, QtCore.Qt.AlignRight)
