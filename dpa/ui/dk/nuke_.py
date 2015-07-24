@@ -223,14 +223,16 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
 
         tasks_info_config.add('task_id', task_id)
 
+        out_file = self.session.nuke.filename(render_node, 
+            self.session.nuke.REPLACE)
 
         if not self._debug_mode:
 
             progress_dialog.setLabelText("Submitting to the queue...")
 
             create_queue_task(self._render_queue, script_path, 
-                task_id, output_file=product_repr_area.dir(),
-                submit=True, log_path=script_path + '.log')
+                task_id, output_file=out_file, submit=True, 
+                log_path=script_path + '.log')
 
         tasks_info_config.write(tasks_info_file)
         os.chmod(tasks_info_file, 0660)
