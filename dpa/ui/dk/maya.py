@@ -7,6 +7,7 @@ import shutil
 
 from PySide import QtCore, QtGui
 
+from dpa.action import ActionError
 from dpa.action.registry import ActionRegistry
 from dpa.config import Config
 from dpa.imgres import ImgRes, ImgResError
