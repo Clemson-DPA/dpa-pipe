@@ -280,8 +280,6 @@ class NukeDarkKnightDialog(BaseDarkKnightDialog):
 
         # ---- write node
 
-        all_write_nodes = self.session.nuke.allNodes(filter='Write')
-
         write_nodes = [node for node in self.session.nuke.allNodes(
             filter='Write') if node.knob('product_name')]
 
