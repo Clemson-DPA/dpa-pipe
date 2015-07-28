@@ -22,6 +22,7 @@ from dpa.user import current_username, User
 # -----------------------------------------------------------------------------
 
 DK_CONFIG_PATH = "config/notify/dk.cfg"
+PRMAN_CONFIG_PATH = "config/maya/prman.cfg"
 
 # -----------------------------------------------------------------------------
 class MayaDarkKnightDialog(BaseDarkKnightDialog):
@@ -255,6 +256,13 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             cur_op += 1
             progress_dialog.setValue(cur_op)
 
+        # ---- get a list of warnings to ignore
+
+        prman_config = ptask.area.config(PRMAN_CONFIG_PATH, 
+            composite_ancestors=True, composite_method="override")
+        prman_warnings = " ".join(
+            ["-woff " + w for w in prman_config.get('woff', [])])
+
         # ---- construct scripts for the queue
 
         render_summary = []
@@ -342,8 +350,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 # For Josh: I'm altering how this works in dpa_ribrender
                 render_cmd += "-f {rl} ".format(rl=render_layer)
                 render_cmd += "-p {proj} ".format(proj=ver_project)
-                render_cmd += "--prman '-t:0 -cwd \"{proj}\"' ".\
-                    format(proj=ver_project)
+                render_cmd += "--prman '-t:0 -cwd \"{proj}\" {warn}' ".\
+                    format(proj=ver_project, warn=prman_warnings)
 
                 with open(script_path, "w") as script_file:
                     script_file.write("#!/bin/bash\n\n")
