@@ -206,13 +206,17 @@ class ProductUpdateAction(Action):
 
         msg += "\nYou should update your subscriptions accordingly."
 
-        recipients = list(set([p.creator.email for p in ptasks_to_notify]))
-
         subject = "Product Update: " + self.product.spec
         sender = User.current().email
     
-        notification = Notification(subject, msg, recipients, sender=sender)
-        notification.send_email()
+        # TODO: the recipients should be creators of versions subscribed 
+        recipients = set([p.creator.email for p in ptasks_to_notify])
+
+        # no need to send if there are no ptask creators to notify.
+        if recipients:
+            notification = Notification(subject, msg, list(recipients),
+                sender=sender)
+            notification.send_email()
 
     # -------------------------------------------------------------------------
     def undo(self):
