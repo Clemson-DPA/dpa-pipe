@@ -190,9 +190,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         file_base = os.path.splitext(os.path.split(maya_file)[1])[0]
 
-        # set lazy rib gen before save/sync
-        self.session.cmds.setAttr("renderManGlobals.rman__toropt___lazyRibGen",
-            True)
         self.session.cmds.setAttr('defaultResolution.width', self._resolution.width)
         self.session.cmds.setAttr('defaultResolution.height', self._resolution.height)
 
