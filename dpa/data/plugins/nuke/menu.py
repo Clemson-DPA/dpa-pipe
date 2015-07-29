@@ -4,7 +4,7 @@ import nuke
 from dpa.ptask.area import PTaskArea
 from dpa.ui.icon.factory import IconFactory
 
-from dpa.nuke.nodes import add_commands
+from dpa.nuke.nodes import add_commands, on_load
 
 # -----------------------------------------------------------------------------
 
@@ -40,4 +40,5 @@ load_toolbars()
 
 print "Loading DPA Nuke nodes..."
 add_commands()
+nuke.addOnScriptLoad(dpa.nuke.nodes.on_load)
 
