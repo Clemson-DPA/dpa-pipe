@@ -56,7 +56,6 @@ def create_write_product_node():
     node.addKnob(nuke.EvalString_Knob('product_ver_note', 'description', ""))
 
     # hide the file knob
-    node.knob('file').setVisible(False)
     node.knob('file_type').setValue('exr')
     node.knob('product_ver_note').setVisible(False)
 
@@ -147,7 +146,7 @@ def read_sub_knob_changed(node=None, knob=None):
 
         # populate the possible file names
         file_specs = {}
-        frame_regex = re.compile('(\w+).(\d{4})\.(\w+)')
+        frame_regex = re.compile('([,\w]+).(\d{4})\.(\w+)')
         for file_name in os.listdir(repr_dir):
             
             matches = frame_regex.search(file_name)
@@ -213,8 +212,6 @@ def create_read_sub_node():
     node.addKnob(product_repr_select)
     node.addKnob(product_seq_select)
 
-    node.knob('file').setVisible(False)
-
     # make the tab pop to front
     node['Sub'].setFlag(0) 
 
@@ -228,6 +225,8 @@ def update_all_read_sub_nodes():
 
     repr_str_list = [DEFAULT_REPR_STR]
     repr_str_list.extend(sorted(PRODUCT_REPR_STR_TO_PATH.keys()))
+
+    print "UPDATING: " + str([n.name() for n in read_sub_nodes])
 
     for node in read_sub_nodes:
 
@@ -251,6 +250,9 @@ def update_all_read_sub_nodes():
         else:
             product_repr_select.setValue(DEFAULT_REPR_STR)
 
+        nuke.callbacks.addKnobChanged(read_sub_knob_changed,
+            nodeClass='Read', node=node)
+
 # -----------------------------------------------------------------------------
 def add_commands():
 
@@ -264,4 +266,10 @@ def add_commands():
         name='Image/ReadSub',
         command=create_read_sub_node,
     )
+
+# -----------------------------------------------------------------------------
+def on_load():
+
+    populate_sub_cache(refresh=True)
+    update_all_read_sub_nodes()
 
