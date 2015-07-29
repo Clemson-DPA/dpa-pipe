@@ -1,60 +1,60 @@
 
 import os
-import time
 
-# attempt to import hou module. if it fails, not in a houdini session.
-try: 
+from PySide import QtCore, QtGui
+
+from dpa.app.session import Session, SessionRegistry, SessionError
+
+# -----------------------------------------------------------------------------
+
+try:
     import hou
 except ImportError:
     HOU_IMPORTED = False
+    HOU_HAS_UI = False
 else:
     HOU_IMPORTED = True
-
-from dpa.app.session import RemoteMixin, Session, SessionError
+    HOU_HAS_UI = hasattr(hou, 'ui')
 
 # -----------------------------------------------------------------------------
-class HoudiniSession(RemoteMixin, Session):
+class HoudiniSession(Session):
 
-    # XXX should come from config
-    SERVER_EXECUTABLE = "/home/jtomlin/dev/dpa-pipe/bin/dpa_houdini_server"
+    app_name = 'houdini'
 
     # -------------------------------------------------------------------------
-    def __init__(self, filepath=None, remote=False):
+    @classmethod
+    def current(cls):
+        if not HOU_IMPORTED:
+            return None
+        return cls()
 
-        super(HoudiniSession, self).__init__(remote=remote)
+    # -------------------------------------------------------------------------
+    def __init__(self, file_path=None):
+
+        super(HoudiniSession, self).__init__()
 
         self._hou = self.init_module('hou')
 
-        if filepath:
-            self.open_file(filepath)
+        if file_path:
+            self.open_file(file_path)
 
     # -------------------------------------------------------------------------
     def close(self):
-        if self.remote_connection:
-            self.shutdown() 
-        else:
-            self.hou.hipFile.clear()
+        self.hou.exit()
 
     # -------------------------------------------------------------------------
-    def open_file(self, filepath):
-
-        if not os.path.exists(filepath):
+    def open_file(self, file_path):
+    
+        if not os.path.exists(file_path):
             raise SessionError(
-                "Can not open '{f}'. File does not exist.".format(f=filepath))
+                "Can not open '{f}'. File does not exist.".format(f=file_path))
 
-        try:
-            self.hou.hipFile.load(filepath)
-        except RuntimeError as e:
-            raise SessionError(str(e))
+        self.hou.hipFile.load(file_path)
 
     # -------------------------------------------------------------------------
-    def save(self, filepath=None, overwrite=False):
+    def save(self, file_path=None):
 
-        if filepath and os.path.exists(filepath) and not overwrite:
-            raise SessionError(
-                "Can not save '{f}'. File exists.".format(f=filepath))
-
-        self.hou.hipFile.save(file_name=filepath)
+        self.hou.hipFile.save(file_name=file_path)
 
     # -------------------------------------------------------------------------
     @property
@@ -65,16 +65,23 @@ class HoudiniSession(RemoteMixin, Session):
     @property
     def in_session(self):
         """Returns True if inside a current app session."""
-        return HOU_IMPORTED or self.remote_connection
+        return HOU_IMPORTED
+
+    # -------------------------------------------------------------------------
+    @property
+    def main_window(self):
+
+        if not HOU_HAS_UI:
+            return None
+
+        return QtGui.QApplication.activeWindow()
 
     # -------------------------------------------------------------------------
     @property
     def name(self):
         """Returns the name of the application."""
-        return "houdini"
+        return self.__class__.app_name
 
-    # -------------------------------------------------------------------------
-    @property
-    def server_executable(self):
-        return self.__class__.SERVER_EXECUTABLE
+# -----------------------------------------------------------------------------
+SessionRegistry().register(HoudiniSession)
 
