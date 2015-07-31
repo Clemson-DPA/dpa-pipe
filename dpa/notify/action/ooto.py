@@ -2,7 +2,7 @@
 from .base import BaseNotifyAction
 from dpa.action import ActionError
 from dpa.config import Config
-from dpa.ptask import PTaskArea
+from dpa.ptask.area import PTaskArea
 from dpa.shell.output import Output, Style
 from dpa.user import User, UserError
 
