@@ -513,18 +513,20 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             render_summary.append(
                 (render_layer, task_id_base, product_repr, queue_dir))
 
-            if not self._debug_mode:
+            # For now, disable wrangling tickets. bsddb is causing problems
+            # - zshore, 2015-10-23
+            # if not self._debug_mode:
 
-                # ---- dpa specific queue stuff            
+            #     # ---- dpa specific queue stuff            
 
-                from cheesyq import DPAWrangler
+            #     from cheesyq import DPAWrangler
 
-                # create wrangling ticket 
-                wrangle = DPAWrangler.WrangleRecord(task_id_base)
-                wrangle.frames = self._frame_list
-                db = DPAWrangler.GetWranglingDB()
-                db.set(wrangle.baseId, wrangle)
-                DPAWrangler.AssignWranglerTask("none", task_id_base)
+            #     # create wrangling ticket 
+            #     wrangle = DPAWrangler.WrangleRecord(task_id_base)
+            #     wrangle.frames = self._frame_list
+            #     db = DPAWrangler.GetWranglingDB()
+            #     db.set(wrangle.baseId, wrangle)
+            #     DPAWrangler.AssignWranglerTask("none", task_id_base)
 
             tasks_info_config.write(tasks_info_file)
             os.chmod(tasks_info_file, 0660)
@@ -685,7 +687,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 category='imgseq',
                 description=render_layer + " render layer",
                 file_type=self._file_type,
-                    resolution=self._res_str,
+                resolution=self._res_str,
                 note=self._version_note,
             )
 
@@ -750,7 +752,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     format(proj=ver_project, fb=file_base, fn=frame_padded,
                         rl=render_layer)
 
-                render_cmd = "kick -dw -v 0 -i $ASS_PATH "
+                render_cmd = "/opt/solidangle/arnold-maya2014/bin/kick -dw -v 0 -i $ASS_PATH "
                 render_cmd += "-l /opt/solidangle/arnold-maya2014/shaders "
                 render_cmd += "-o {od} ".format(od=out_file)
                 #render_cmd += "-f {rl} ".format(rl=render_layer)
@@ -767,8 +769,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     # 'kick' command has to be added to $PATH
                     # Create env variable for Arnold License server
-                    script_file.write("export PATH=/opt/solidangle/arnold-maya2014/bin:$PATH\n\n")
-                    script_file.write("export solidangle_LICENSE=5053@license2.cs.clemson.edu\n")
+                    script_file.write("export solidangle_LICENSE=5053@license2.cs.clemson.edu\n\n")
 
                     script_file.write("# set the ptask version to render\n")
                     script_file.write(dpaset_cmd + "\n")
@@ -865,7 +866,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     script_file.write("# generate the ass files...\n")
 
-                    arnold_export_cmd = "arnoldExportAss -f {ad}/{fb}_{rl}.ass ".\
+                    arnold_export_cmd = "arnoldExportAss -f \"{ad}/{fb}_{rl}.ass\" ".\
                         format(ad=scene_dir, fb=file_base, rl=render_layer)
                     arnold_export_cmd += "-startFrame {sf} -endFrame {ef} -frameStep 1 ".\
                         format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
@@ -874,7 +875,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     
                     frames_scene_cmd = 'maya -batch -proj "{proj}" '.format(
                         proj=ver_project)
-                    frames_scene_cmd += '-command "{ar}" '.format(ar=arnold_export_cmd)
+                    frames_scene_cmd += '-command \'{ar}\' '.format(ar=arnold_export_cmd)
                     frames_scene_cmd += '-file "{mf}"'.format(mf=maya_file)
                     script_file.write(frames_scene_cmd + "\n")
 
@@ -917,19 +918,21 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
             render_summary.append(
                 (render_layer, task_id_base, product_repr, queue_dir))
+            
+            # For now, disable wrangling tickets. bsddb is causing problems
+            # - zshore, 2015-10-23
+            # if not self._debug_mode:
 
-            if not self._debug_mode:
+            #     # ---- dpa specific queue stuff
+            
+            #     from cheesyq import DPAWrangler
 
-                # ---- dpa specific queue stuff            
-
-                from cheesyq import DPAWrangler
-
-                # create wrangling ticket 
-                wrangle = DPAWrangler.WrangleRecord(task_id_base)
-                wrangle.frames = self._frame_list
-                db = DPAWrangler.GetWranglingDB()
-                db.set(wrangle.baseId, wrangle)
-                DPAWrangler.AssignWranglerTask("none", task_id_base)
+            #     # create wrangling ticket 
+            #     wrangle = DPAWrangler.WrangleRecord(task_id_base)
+            #     wrangle.frames = self._frame_list
+            #     db = DPAWrangler.GetWranglingDB()
+            #     db.set(wrangle.baseId, wrangle)
+            #     DPAWrangler.AssignWranglerTask("none", task_id_base)
 
             tasks_info_config.write(tasks_info_file)
             os.chmod(tasks_info_file, 0660)
@@ -1174,11 +1177,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         controls_layout.addWidget(self._scenegen_queues, 5, 1, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(render_queue_lbl, 6, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._render_queues, 6, 1, QtCore.Qt.AlignLeft)
-
-        # Choose Renderer
         controls_layout.addWidget(renderers_lbl, 7, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._renderers, 7, 1, QtCore.Qt.AlignLeft)
-
         controls_layout.addWidget(sep_layers_lbl, 8, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._sep_layers, 8, 1, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(gen_scenes_lbl, 9, 0, QtCore.Qt.AlignRight)
