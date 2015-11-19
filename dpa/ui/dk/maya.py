@@ -29,10 +29,11 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
     # FIXME: i don't want to hardcode this stuff ...
     OUTPUT_FILE_TYPES = ['exr']
-    RENDER_QUEUES = ['muenster', 'cheddar', 'gouda', 'goat', 'hold', 'nuke', 
-        'velveeta', 'cheezwhiz']
-    RIBGEN_QUEUES = ['goat', 'cheddar','muenster',  'gouda', 'hold', 'nuke', 
-        'velveeta', 'cheezwhiz']
+    RENDER_QUEUES = ['muenster', 'cheddar', 'hold', 'nuke', 'velveeta', 
+        'cheezwhiz']
+    RIBGEN_QUEUES = ['cheddar','muenster', 'hold', 'nuke', 'velveeta', 
+        'cheezwhiz']
+    RENDERERS = ['Renderman', 'Arnold']
 
     # -------------------------------------------------------------------------
     def __init__(self, parent=None):
@@ -125,13 +126,19 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         self._file_type = self._file_types.currentText()
         self._camera = self._cameras.currentText()
-        self._ribgen_queue = self._ribgen_queues.currentText()
+        self._renderer_to_use = self._renderers.currentText()
+        self._scenegen_queue = self._scenegen_queues.currentText()
         self._render_queue = self._render_queues.currentText()
         self._separate_layers = self._sep_layers.isChecked()
-        self._generate_ribs = self._gen_ribs.isChecked()
-        self._remove_ribs = self._rem_ribs.isChecked()
+        self._generate_scenes = self._gen_scenes.isChecked()
+        self._remove_scenes = self._rem_scenes.isChecked()
         self._version_note = self._version_note_edit.text()
         self._debug_mode = self._debug.isChecked()
+
+        # Choose product renderer
+        product_render = self._product_render_renderman
+        if self._renderer_to_use == 'Arnold':
+            product_render = self._product_render_arnold
 
         if not self._version_note:
             self._show_error("Please specify a description of " + 
@@ -141,7 +148,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
         if self._render_to_products:
             try:
-                self._product_render()
+                product_render()
             except Exception as e:
                 self._show_error(str(e))
             else:
@@ -152,7 +159,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         self.setEnabled(True)
 
     # -----------------------------------------------------------------------------
-    def _product_render(self):
+    def _product_render_renderman(self):
 
         # get timestamp for all the tasks being submitted
         now = datetime.datetime.now()
@@ -163,10 +170,10 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         num_ops = 1 + len(render_layers) * len(self._frame_list) # layer > frame
         num_ops += len(self._frame_list) # frame submission
 
-        if self._remove_ribs:
+        if self._remove_scenes:
             num_ops += 1
 
-        if self._generate_ribs:
+        if self._generate_scenes:
             num_ops += 1
 
         cur_op = 0
@@ -236,16 +243,16 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             progress_dialog.close()
             raise DarkKnightError("Unable to find product creation action.")
 
-        # ---- clean up ribs
+        # ---- clean up scenes
 
-        rib_dir = os.path.join(ver_project, 'renderman', file_base, 'rib')
-        if self._remove_ribs:
+        scene_dir = os.path.join(ver_project, 'renderman', file_base, 'rib')
+        if self._remove_scenes:
 
             progress_dialog.setLabelText("Removing ribs...")
 
-            if os.path.isdir(rib_dir):
+            if os.path.isdir(scene_dir):
                 try:
-                    shutil.rmtree(rib_dir)
+                    shutil.rmtree(scene_dir)
                 except Exception as e:
                     progress_dialog.close()
                     raise DarkKnightError("Unable to clean up ribs: " + str(e))
@@ -335,10 +342,10 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 out_file = os.path.join(out_dir, "{rl}.{fn}.{ft}".\
                     format(rl=render_layer, fn=frame_padded, ft=self._file_type))
 
-                simple_rib = "{proj}renderman/{fb}/rib/{fn}/{fn}.rib".format(
+                simple_scene = "{proj}renderman/{fb}/rib/{fn}/{fn}.rib".format(
                     proj=ver_project, fb=file_base, fn=frame_padded)
 
-                layer_rib = "{proj}renderman/{fb}/rib/{fn}/{fn}_{rl}.rib".\
+                layer_scene = "{proj}renderman/{fb}/rib/{fn}/{fn}_{rl}.rib".\
                     format(proj=ver_project, fb=file_base, fn=frame_padded,
                         rl=render_layer)
 
@@ -361,12 +368,12 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     script_file.write(dpaset_cmd + "\n")
                     script_file.write("cd " + ver_project + "\n\n")
 
-                    # the logic for determining which rib will be generated is
+                    # the logic for determining which scene will be generated is
                     # unclear at this point. So we'll build a conditional
-                    script_file.write("if [[ -f {lr} ]]; then\n".format(lr=layer_rib))
-                    script_file.write("    export RIB_PATH={lr}\n".format(lr=layer_rib))
+                    script_file.write("if [[ -f {lr} ]]; then\n".format(lr=layer_scene))
+                    script_file.write("    export RIB_PATH={lr}\n".format(lr=layer_scene))
                     script_file.write("else\n")
-                    script_file.write("    export RIB_PATH={sr}\n".format(sr=simple_rib))
+                    script_file.write("    export RIB_PATH={sr}\n".format(sr=simple_scene))
                     script_file.write("fi\n")
 
                     script_file.write("# render!\n")
@@ -388,7 +395,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             task_id_base = get_unique_id(product_repr_area.spec, dt=now)
             tasks_info_config.add('base_id', task_id_base)
 
-            if self._generate_ribs:
+            if self._generate_scenes:
                 frame_queue = 'hold'
             else:
                 frame_queue = self._render_queue
@@ -432,7 +439,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             #os.system("cqresubmittask {qn} {tid}".format(
             #    qn=frame_queue, tid=task_id_base))
 
-            if self._generate_ribs:
+            if self._generate_scenes:
 
                 progress_dialog.setLabelText("Creating rib generation script...")
 
@@ -452,19 +459,19 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     script_file.write("# generate the ribs...\n")
 
-                    job_rib_cmd = 'maya -batch -proj "{proj}" '.format(
+                    job_scene_cmd = 'maya -batch -proj "{proj}" '.format(
                         proj=ver_project)
-                    job_rib_cmd += '-command "renderManBatchGenRibForLayer {li} {sf} {ef} 1" '.\
+                    job_scene_cmd += '-command "renderManBatchGenRibForLayer {li} {sf} {ef} 1" '.\
                         format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
-                    job_rib_cmd += '-file "{mf}"'.format(mf=maya_file)
-                    script_file.write(job_rib_cmd + "\n")
+                    job_scene_cmd += '-file "{mf}"'.format(mf=maya_file)
+                    script_file.write(job_scene_cmd + "\n")
 
-                    frames_rib_cmd = 'maya -batch -proj "{proj}" '.format(
+                    frames_scene_cmd = 'maya -batch -proj "{proj}" '.format(
                         proj=ver_project)
-                    frames_rib_cmd += '-command "renderManBatchGenRibForLayer {li} {sf} {ef} 2" '.\
+                    frames_scene_cmd += '-command "renderManBatchGenRibForLayer {li} {sf} {ef} 2" '.\
                         format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
-                    frames_rib_cmd += '-file "{mf}"'.format(mf=maya_file)
-                    script_file.write(frames_rib_cmd + "\n")
+                    frames_scene_cmd += '-file "{mf}"'.format(mf=maya_file)
+                    script_file.write(frames_scene_cmd + "\n")
 
                     script_file.write(
                         "\n# make sure project dir has group permissions\n")
@@ -483,7 +490,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                 os.chmod(script_path, 0770)
 
-                # submit the ribgen script
+                # submit the scenegen script
                 progress_dialog.setLabelText(
                     "Submitting rib gen: " + script_path)
 
@@ -492,8 +499,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                 if not self._debug_mode:
 
-                    create_queue_task(self._ribgen_queue, script_path, 
-                        task_id, output_file=rib_dir, submit=True, 
+                    create_queue_task(self._scenegen_queue, script_path, 
+                        task_id, output_file=scene_dir, submit=True, 
                         log_path=script_path + '.log')
 
                 cur_op += 1
@@ -506,18 +513,20 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             render_summary.append(
                 (render_layer, task_id_base, product_repr, queue_dir))
 
-            if not self._debug_mode:
+            # For now, disable wrangling tickets. bsddb is causing problems
+            # - zshore, 2015-10-23
+            # if not self._debug_mode:
 
-                # ---- dpa specific queue stuff            
+            #     # ---- dpa specific queue stuff            
 
-                from cheesyq import DPAWrangler
+            #     from cheesyq import DPAWrangler
 
-                # create wrangling ticket 
-                wrangle = DPAWrangler.WrangleRecord(task_id_base)
-                wrangle.frames = self._frame_list
-                db = DPAWrangler.GetWranglingDB()
-                db.set(wrangle.baseId, wrangle)
-                DPAWrangler.AssignWranglerTask("none", task_id_base)
+            #     # create wrangling ticket 
+            #     wrangle = DPAWrangler.WrangleRecord(task_id_base)
+            #     wrangle.frames = self._frame_list
+            #     db = DPAWrangler.GetWranglingDB()
+            #     db.set(wrangle.baseId, wrangle)
+            #     DPAWrangler.AssignWranglerTask("none", task_id_base)
 
             tasks_info_config.write(tasks_info_file)
             os.chmod(tasks_info_file, 0660)
@@ -533,11 +542,426 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             msg_body += "  Resolution: " + self._res_str + "\n"
             msg_body += "  File type: " + self._file_type + "\n"
             msg_body += "  Camera: " + self._camera + "\n"
-            if self._generate_ribs:
-                msg_body += "  Rib gen queue: " + self._ribgen_queue + "\n"
+            if self._generate_scenes:
+                msg_body += "  Rib gen queue: " + self._scenegen_queue + "\n"
             msg_body += "  Render queue: " + self._render_queue + "\n"
             msg_body += "  Frames: " + str(self._frange) + "\n"
-            msg_body += "  Rib directory: " + rib_dir + "\n"
+            msg_body += "  Rib directory: " + scene_dir + "\n"
+            msg_body += "\n" 
+            for (layer, task_id_base, product_repr, queue_dir) in render_summary:
+                msg_body += "    Render layer: " + layer + "\n"
+                msg_body += "      Base task ID: " + task_id_base + "\n"
+                msg_body += "      Product representation: " + \
+                    product_repr.spec + "\n"
+                msg_body += "      Scripts directory: " + queue_dir + "\n"
+                msg_body += "\n" 
+
+            dk_config = ptask.area.config(DK_CONFIG_PATH, 
+                composite_ancestors=True, composite_method="append")
+            recipients = dk_config.get('notify', [])
+            recipients.append(current_username())
+            recipients = emails_from_unames(recipients)
+            notification = Notification(msg_title, msg_body, recipients,
+                sender=User.current().email)
+            notification.send_email()
+
+    # -----------------------------------------------------------------------------
+    def _product_render_arnold(self):
+
+        # get timestamp for all the tasks being submitted
+        now = datetime.datetime.now()
+    
+        render_layers = self._get_render_layers()
+
+        # figure out the total number of operations to perform for the progress
+        num_ops = 1 + len(render_layers) * len(self._frame_list) # layer > frame
+        num_ops += len(self._frame_list) # frame submission
+
+        if self._remove_scenes:
+            num_ops += 1
+
+        if self._generate_scenes:
+            num_ops += 1
+
+        cur_op = 0
+
+        progress_dialog = QtGui.QProgressDialog(
+            "Product render...", "", cur_op, num_ops, self)
+        progress_dialog.setWindowTitle("Dark Knight is busy...")
+        progress_dialog.setAutoReset(False)
+        progress_dialog.setLabelText("Preparing maya file for rendering...")
+        progress_dialog.show()
+
+        ptask = self._cur_ptask
+        ptask_version = self._cur_ptask.version(self._version)
+
+        ptask_dir = self._cur_ptask.area.dir()
+        ver_dir = ptask.area.dir(version=self._version)
+        
+        # need to get the maya file in the version directory
+        maya_file = self.session.cmds.file(q=True, sceneName=True)
+        maya_file = maya_file.replace(ptask_dir, ver_dir)
+
+        file_base = os.path.splitext(os.path.split(maya_file)[1])[0]
+
+        self.session.cmds.setAttr('defaultResolution.width', self._resolution.width)
+        self.session.cmds.setAttr('defaultResolution.height', self._resolution.height)
+
+        # set the output file naming convention to name.#.ext
+        self.session.cmds.setAttr("defaultRenderGlobals.animation", True)
+        self.session.cmds.setAttr("defaultRenderGlobals.putFrameBeforeExt", True)
+        self.session.cmds.setAttr("defaultRenderGlobals.outFormatControl", False)
+
+        # set all other cameras to not be renderable (this seems to work)
+        cam_shape_list = self.session.cmds.ls(cameras=True)
+        for cam_shape in cam_shape_list:
+            cam_name = str(
+                self.session.cmds.listRelatives(cam_shape, parent=True)[0])
+            if cam_name == self._camera:
+                self.session.cmds.setAttr(cam_shape + ".renderable", 1)
+            else:
+                self.session.cmds.setAttr(cam_shape + ".renderable", 0)
+
+        # ---- sync current work area to version snapshot to render from
+
+        cur_project = self.session.cmds.workspace(query=True, rootDirectory=True)
+        ver_project = cur_project.replace(ptask_dir, ver_dir)
+
+        progress_dialog.setLabelText("Sync'ing work to current version...")
+
+        try:
+            self.session.save() 
+            self._sync_latest()
+        except Exception as e:
+            self._show_error("Unable to save & sync the latest work: " + str(e))
+            self.setEnabled(True)
+            progress_dialog.close()
+            return
+
+        cur_op += 1
+        progress_dialog.setValue(cur_op)
+
+        create_action_cls = ActionRegistry().get_action('create', 'product')
+        if not create_action_cls:
+            progress_dialog.close()
+            raise DarkKnightError("Unable to find product creation action.")
+
+        # ---- clean up ASSs
+
+        scene_dir = os.path.join(ver_project, 'arnold', file_base, 'ass')
+        if self._remove_scenes:
+
+            progress_dialog.setLabelText("Removing ass files...")
+
+            if os.path.isdir(scene_dir):
+                try:
+                    shutil.rmtree(scene_dir)
+                except Exception as e:
+                    progress_dialog.close()
+                    raise DarkKnightError("Unable to clean up ass files: " + str(e))
+
+            cur_op += 1
+            progress_dialog.setValue(cur_op)
+
+        # ---- get a list of warnings to ignore
+
+        #prman_config = ptask.area.config(PRMAN_CONFIG_PATH, 
+        #    composite_ancestors=True, composite_method="override")
+        #prman_warnings = " ".join(
+        #    ["-woff " + w for w in prman_config.get('woff', [])])
+
+        # ---- construct scripts for the queue
+
+        render_summary = []
+
+        for render_layer in render_layers:
+
+            progress_dialog.setLabelText(
+                "Creating product for layer: {rl}...".format(rl=render_layer))
+
+            # ensure product exists for each render layer
+            create_action = create_action_cls(
+                product=render_layer,
+                ptask=ptask_version.ptask_spec,
+                version=ptask_version.number,
+                category='imgseq',
+                description=render_layer + " render layer",
+                file_type=self._file_type,
+                resolution=self._res_str,
+                note=self._version_note,
+            )
+
+            try:
+                create_action()
+            except ActionError as e:
+                progress_dialog.close()
+                raise DarkKnightError("Unable to create product: " + str(e))
+
+            product_repr = create_action.product_repr
+            product_repr_area = product_repr.area
+
+            progress_dialog.setLabelText(
+                "Provisioning 'queue' directory in product...")
+
+            # make sure queue directory exists 
+            try:
+                product_repr_area.provision('queue')
+            except Exception as e:
+                progress_dialog.close()
+                raise DarkKnightError(
+                    "Unable to create queue scripts directory: " + str(e))
+
+            queue_dir = product_repr_area.dir(dir_name='queue')
+            tasks_info_file = os.path.join(queue_dir, 'tasks_info.cfg')
+            tasks_info_config = Config()
+
+            # dpaset command to run
+            dpaset_cmd = 'eval "`dpa env ptask {pt}@{vn}`"'.format(
+                pt=ptask.spec, vn=ptask_version.number)
+            
+            # set group permissions on project dir, recursively
+            os.system("chmod g+rw {pd} -R".format(pd=ver_project))
+
+            # figure out the render layer
+            if render_layer == 'masterLayer':
+                layer_index = self.session.cmds.getAttr("defaultRenderLayer.rlid")
+            else:
+                layer_index = self.session.cmds.getAttr(render_layer + ".rlid")
+
+            frame_scripts = []
+            for frame in self._frame_list:
+
+                frame_padded = str(frame).zfill(4)
+
+                progress_dialog.setLabelText(
+                    "Building render shell script for {rl} frame {f}".format(
+                        rl=render_layer, f=frame_padded))
+
+                script_path = os.path.join(queue_dir, 
+                    "{rl}.{fn}.sh".format(rl=render_layer, fn=frame_padded))
+
+                out_dir = product_repr_area.dir()
+
+                out_file = os.path.join(out_dir, "{rl}.{fn}.{ft}".\
+                    format(rl=render_layer, fn=frame_padded, ft=self._file_type))
+
+                simple_scene = "{proj}arnold/{fb}/ass/{fb}.{fn}.ass".format(
+                    proj=ver_project, fb=file_base, fn=frame_padded)
+
+                layer_scene = "{proj}arnold/{fb}/ass/{fb}_{rl}.{fn}.ass".\
+                    format(proj=ver_project, fb=file_base, fn=frame_padded,
+                        rl=render_layer)
+
+                render_cmd = "/opt/solidangle/arnold-maya2014/bin/kick -dw -v 0 -i $ASS_PATH "
+                render_cmd += "-l /opt/solidangle/arnold-maya2014/shaders "
+                render_cmd += "-o {od} ".format(od=out_file)
+                #render_cmd += "-f {rl} ".format(rl=render_layer)
+                #render_cmd += "-p {proj} ".format(proj=ver_project)
+                #render_cmd += "--prman '-t:0 -cwd \"{proj}\" {warn}' ".\dd
+                #    format(proj=ver_project, warn=prman_warnings)
+
+                with open(script_path, "w") as script_file:
+                    script_file.write("#!/bin/bash\n\n")
+
+                    # XXX these should happen automatically in the queue...
+                    script_file.write("source /DPA/wookie/dpa/bash/startup.bash\n")
+                    script_file.write("pipeup\n")
+
+                    # 'kick' command has to be added to $PATH
+                    # Create env variable for Arnold License server
+                    script_file.write("export solidangle_LICENSE=5053@license2.cs.clemson.edu\n\n")
+
+                    script_file.write("# set the ptask version to render\n")
+                    script_file.write(dpaset_cmd + "\n")
+                    script_file.write("cd " + ver_project + "\n\n")
+
+                    # the logic for determining which ass will be generated is
+                    # unclear at this point. So we'll build a conditional
+                    script_file.write("if [[ -f {lr} ]]; then\n".format(lr=layer_scene))
+                    script_file.write("    export ASS_PATH={lr}\n".format(lr=layer_scene))
+                    script_file.write("else\n")
+                    script_file.write("    export ASS_PATH={sr}\n".format(sr=simple_scene))
+                    script_file.write("fi\n")
+
+                    script_file.write("# render!\n")
+                    script_file.write(render_cmd + "\n\n")
+
+                    script_file.write("chmod 660 {of}\n\n".format(
+                        of=os.path.join(out_dir, 
+                            render_layer + "*." + self._file_type)))
+
+                os.chmod(script_path, 0770)
+
+                frame_scripts.append((frame_padded, script_path, out_file))
+
+                cur_op += 1
+                progress_dialog.setValue(cur_op)
+
+            frame_tasks = []
+
+            task_id_base = get_unique_id(product_repr_area.spec, dt=now)
+            tasks_info_config.add('base_id', task_id_base)
+
+            if self._generate_scenes:
+                frame_queue = 'hold'
+            else:
+                frame_queue = self._render_queue
+
+            # create frame tasks
+            for (frame, frame_script, out_file) in frame_scripts:
+
+                progress_dialog.setLabelText(
+                    "Submitting frame: " + frame_script)
+
+                task_id = task_id_base + "_" + frame
+
+                if not self._debug_mode:
+
+                    # create tasks, don't actually submit yet
+                    create_queue_task(frame_queue, frame_script, task_id,
+                        output_file=out_file, submit=False, 
+                        log_path=frame_script + '.log')
+
+                    frame_tasks.append((frame, task_id))
+                    #
+                    #  resubmit frame-by-frame because 
+                    #  group submit seems to be occasionally
+                    #  having problems.
+                    os.system("cqresubmittask {qn} {tid}".format(
+                        qn=frame_queue, tid=task_id))
+
+                cur_op += 1
+                progress_dialog.setValue(cur_op)
+
+            frame_info = Config()
+            for (frame, task_id) in frame_tasks:
+                frame_info.add(str(frame), task_id)
+            tasks_info_config.add('frame_ids', frame_info)
+
+            # resubmit all at once (workaround for slow individual submissions)
+            #
+            #  This approach seems to be having problems with the server
+            #  communications.  Switch to frame-by-frame resubmit because
+            #  that has worked where this fails
+            #os.system("cqresubmittask {qn} {tid}".format(
+            #    qn=frame_queue, tid=task_id_base))
+
+            if self._generate_scenes:
+
+                progress_dialog.setLabelText("Creating ass generation script...")
+
+                script_path = os.path.join(queue_dir,
+                    "{rl}_assgen.sh".format(rl=render_layer))
+
+                with open(script_path, "w") as script_file:
+                    script_file.write("#!/bin/bash\n\n")
+
+                    # XXX these should happen automatically in the queue...
+                    script_file.write("source /DPA/wookie/dpa/bash/startup.bash\n")
+                    script_file.write("pipeup\n\n")
+
+                    script_file.write("# set the ptask version to render\n")
+                    script_file.write(dpaset_cmd + "\n")
+                    script_file.write("cd " + ver_project + "\n\n")
+
+                    script_file.write("# generate the ass files...\n")
+
+                    current_render_layer = render_layer
+                    if render_layer == 'masterLayer':
+                        current_render_layer = "defaultRenderLayer"
+
+                    switch_render_layer_cmd = "editRenderLayerGlobals "
+                    switch_render_layer_cmd += "-currentRenderLayer \"{rl}\"".\
+                        format(rl=current_render_layer)
+
+                    arnold_export_cmd = "arnoldExportAss -f \"{ad}/{fb}_{rl}.ass\" ".\
+                        format(ad=scene_dir, fb=file_base, rl=render_layer)
+                    arnold_export_cmd += "-startFrame {sf} -endFrame {ef} -frameStep 1 ".\
+                        format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
+                    arnold_export_cmd += "-mask 255 -lightLinks 1 -shadowLinks 1 -cam {cam}".\
+                        format(cam=self._camera)
+                    
+                    maya_batch_cmd = 'maya -batch -proj "{proj}" '.format(
+                        proj=ver_project)
+                    maya_batch_cmd += '-command \'{srlc}; {ar}\' '.\
+                        format(srlc=switch_render_layer_cmd, ar=arnold_export_cmd)
+                    maya_batch_cmd += '-file "{mf}"'.format(mf=maya_file)
+                    script_file.write(maya_batch_cmd + "\n")
+
+                    script_file.write(
+                        "\n# make sure project dir has group permissions\n")
+                    script_file.write(
+                        "chmod g+rw {pd} -R\n\n".format(pd=ver_project))
+
+                    # submit the frames to render
+                    script_file.write("# Submit frames after ass gen \n")
+                    #for (frame, frame_task) in frame_tasks:
+                        #script_file.write("cqmovetask {qn} {tid}\n".format(
+                            #qn=self._render_queue, tid=frame_task))
+                    
+                    # changed to move group
+                    script_file.write("cqmovetask {qn} {tid}\n".format(
+                        qn=self._render_queue, tid=task_id_base))
+
+                os.chmod(script_path, 0770)
+
+                # submit the scenegen script
+                progress_dialog.setLabelText(
+                    "Submitting ass gen: " + script_path)
+
+                task_id = task_id_base + "_asses"
+                tasks_info_config.add('assgen_id', task_id)
+
+                if not self._debug_mode:
+
+                    create_queue_task(self._scenegen_queue, script_path, 
+                        task_id, output_file=scene_dir, submit=True, 
+                        log_path=script_path + '.log')
+
+                cur_op += 1
+                progress_dialog.setValue(cur_op)
+
+            cur_op += 1
+            progress_dialog.setValue(cur_op)
+            progress_dialog.close()
+
+            render_summary.append(
+                (render_layer, task_id_base, product_repr, queue_dir))
+            
+            # For now, disable wrangling tickets. bsddb is causing problems
+            # - zshore, 2015-10-23
+            # if not self._debug_mode:
+
+            #     # ---- dpa specific queue stuff
+            
+            #     from cheesyq import DPAWrangler
+
+            #     # create wrangling ticket 
+            #     wrangle = DPAWrangler.WrangleRecord(task_id_base)
+            #     wrangle.frames = self._frame_list
+            #     db = DPAWrangler.GetWranglingDB()
+            #     db.set(wrangle.baseId, wrangle)
+            #     DPAWrangler.AssignWranglerTask("none", task_id_base)
+
+            tasks_info_config.write(tasks_info_file)
+            os.chmod(tasks_info_file, 0660)
+
+        if not self._debug_mode:
+
+            # send msg...
+            msg_title = "Queue submission report: " + \
+                now.strftime("%Y/%m/%d %H:%M:%S")
+            msg_body = "Submitted the following tasks for " + \
+                ptask.spec + ":\n\n"
+            msg_body += "  Description: " + self._version_note + "\n"
+            msg_body += "  Resolution: " + self._res_str + "\n"
+            msg_body += "  File type: " + self._file_type + "\n"
+            msg_body += "  Camera: " + self._camera + "\n"
+            if self._generate_scenes:
+                msg_body += "  Ass gen queue: " + self._scenegen_queue + "\n"
+            msg_body += "  Render queue: " + self._render_queue + "\n"
+            msg_body += "  Frames: " + str(self._frange) + "\n"
+            msg_body += "  Ass directory: " + scene_dir + "\n"
             msg_body += "\n" 
             for (layer, task_id_base, product_repr, queue_dir) in render_summary:
                 msg_body += "    Render layer: " + layer + "\n"
@@ -578,6 +1002,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         if "defaultRenderLayer" in render_layers:
             i = render_layers.index("defaultRenderLayer")
             render_layers[i] = "masterLayer"
+
+        print(render_layers)
 
         return render_layers
 
@@ -710,7 +1136,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         self._cameras = QtGui.QComboBox()
         self._cameras.addItems(cam_list)
 
-
         start_time = self.session.cmds.getAttr('defaultRenderGlobals.startFrame')
         end_time = self.session.cmds.getAttr('defaultRenderGlobals.endFrame')
 
@@ -725,21 +1150,25 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         self._render_queues = QtGui.QComboBox()
         self._render_queues.addItems(self.__class__.RENDER_QUEUES)
 
-        ribgen_queue_lbl = QtGui.QLabel("Rib generation queue:")
-        self._ribgen_queues = QtGui.QComboBox()
-        self._ribgen_queues.addItems(self.__class__.RIBGEN_QUEUES)
+        scenegen_queue_lbl = QtGui.QLabel("Scene generation queue:")
+        self._scenegen_queues = QtGui.QComboBox()
+        self._scenegen_queues.addItems(self.__class__.RIBGEN_QUEUES)
+
+        renderers_lbl = QtGui.QLabel("Renderer:")
+        self._renderers = QtGui.QComboBox()
+        self._renderers.addItems(self.__class__.RENDERERS)
 
         sep_layers_lbl = QtGui.QLabel("Separate render layers:")
         self._sep_layers = QtGui.QCheckBox("")
         self._sep_layers.setChecked(True)
 
-        gen_ribs_lbl = QtGui.QLabel("Generate rib files:")
-        self._gen_ribs = QtGui.QCheckBox("")
-        self._gen_ribs.setChecked(True)
+        gen_scenes_lbl = QtGui.QLabel("Generate scene (rib/ass) files:")
+        self._gen_scenes = QtGui.QCheckBox("")
+        self._gen_scenes.setChecked(True)
 
-        rem_ribs_lbl = QtGui.QLabel("Remove existing ribs:")
-        self._rem_ribs = QtGui.QCheckBox("")
-        self._rem_ribs.setChecked(True)
+        rem_scenes_lbl = QtGui.QLabel("Remove existing scenes (rib/ass):")
+        self._rem_scenes = QtGui.QCheckBox("")
+        self._rem_scenes.setChecked(True)
 
         debug_lbl = QtGui.QLabel("Debug mode:")
         self._debug = QtGui.QCheckBox("")
@@ -755,18 +1184,20 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
         controls_layout.addWidget(self._file_types, 3, 1, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(cameras_lbl, 4, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._cameras, 4, 1, QtCore.Qt.AlignLeft)
-        controls_layout.addWidget(ribgen_queue_lbl, 5, 0, QtCore.Qt.AlignRight)
-        controls_layout.addWidget(self._ribgen_queues, 5, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(scenegen_queue_lbl, 5, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._scenegen_queues, 5, 1, QtCore.Qt.AlignLeft)
         controls_layout.addWidget(render_queue_lbl, 6, 0, QtCore.Qt.AlignRight)
         controls_layout.addWidget(self._render_queues, 6, 1, QtCore.Qt.AlignLeft)
-        controls_layout.addWidget(sep_layers_lbl, 7, 0, QtCore.Qt.AlignRight)
-        controls_layout.addWidget(self._sep_layers, 7, 1, QtCore.Qt.AlignLeft)
-        controls_layout.addWidget(gen_ribs_lbl, 8, 0, QtCore.Qt.AlignRight)
-        controls_layout.addWidget(self._gen_ribs, 8, 1, QtCore.Qt.AlignLeft)
-        controls_layout.addWidget(rem_ribs_lbl, 9, 0, QtCore.Qt.AlignRight)
-        controls_layout.addWidget(self._rem_ribs, 9, 1, QtCore.Qt.AlignLeft)
-        controls_layout.addWidget(debug_lbl, 10, 0, QtCore.Qt.AlignRight)
-        controls_layout.addWidget(self._debug, 10, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(renderers_lbl, 7, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._renderers, 7, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(sep_layers_lbl, 8, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._sep_layers, 8, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(gen_scenes_lbl, 9, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._gen_scenes, 9, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(rem_scenes_lbl, 10, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._rem_scenes, 10, 1, QtCore.Qt.AlignLeft)
+        controls_layout.addWidget(debug_lbl, 11, 0, QtCore.Qt.AlignRight)
+        controls_layout.addWidget(self._debug, 11, 1, QtCore.Qt.AlignLeft)
         controls_layout.setColumnStretch(2, 1000)
 
         controls_vbox = QtGui.QVBoxLayout()
