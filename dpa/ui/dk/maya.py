@@ -752,7 +752,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     format(proj=ver_project, fb=file_base, fn=frame_padded,
                         rl=render_layer)
 
-                render_cmd = "/opt/solidangle/arnold-maya2014/bin/kick -dw -v 0 -i $ASS_PATH "
+                render_cmd = "/opt/solidangle/arnold-maya2014/bin/kick -dw -v 6 -i $ASS_PATH "
                 render_cmd += "-l /opt/solidangle/arnold-maya2014/shaders "
                 render_cmd += "-o {od} ".format(od=out_file)
                 #render_cmd += "-f {rl} ".format(rl=render_layer)
@@ -895,13 +895,13 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     # submit the frames to render
                     script_file.write("# Submit frames after ass gen \n")
-                    #for (frame, frame_task) in frame_tasks:
-                        #script_file.write("cqmovetask {qn} {tid}\n".format(
-                            #qn=self._render_queue, tid=frame_task))
+                    for (frame, frame_task) in frame_tasks:
+                        script_file.write("cqmovetask {qn} {tid}\n".format(
+                            qn=self._render_queue, tid=frame_task))
                     
                     # changed to move group
-                    script_file.write("cqmovetask {qn} {tid}\n".format(
-                        qn=self._render_queue, tid=task_id_base))
+                    #script_file.write("cqmovetask {qn} {tid}\n".format(
+                        #qn=self._render_queue, tid=task_id_base))
 
                 os.chmod(script_path, 0770)
 
