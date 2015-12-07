@@ -785,8 +785,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     script_file.write("# render!\n")
                     script_file.write(render_cmd + "\n\n")
-<<<<<<< HEAD
-
                     script_file.write("chmod 660 {of}\n\n".format(
                         of=os.path.join(out_dir, 
                             render_layer + "*." + self._file_type)))
@@ -834,56 +832,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                 cur_op += 1
                 progress_dialog.setValue(cur_op)
 
-=======
-
-                    script_file.write("chmod 660 {of}\n\n".format(
-                        of=os.path.join(out_dir, 
-                            render_layer + "*." + self._file_type)))
-
-                os.chmod(script_path, 0770)
-
-                frame_scripts.append((frame_padded, script_path, out_file))
-
-                cur_op += 1
-                progress_dialog.setValue(cur_op)
-
-            frame_tasks = []
-
-            task_id_base = get_unique_id(product_repr_area.spec, dt=now)
-            tasks_info_config.add('base_id', task_id_base)
-
-            if self._generate_scenes:
-                frame_queue = 'hold'
-            else:
-                frame_queue = self._render_queue
-
-            # create frame tasks
-            for (frame, frame_script, out_file) in frame_scripts:
-
-                progress_dialog.setLabelText(
-                    "Submitting frame: " + frame_script)
-
-                task_id = task_id_base + "_" + frame
-
-                if not self._debug_mode:
-
-                    # create tasks, don't actually submit yet
-                    create_queue_task(frame_queue, frame_script, task_id,
-                        output_file=out_file, submit=False, 
-                        log_path=frame_script + '.log')
-
-                    frame_tasks.append((frame, task_id))
-                    #
-                    #  resubmit frame-by-frame because 
-                    #  group submit seems to be occasionally
-                    #  having problems.
-                    os.system("cqresubmittask {qn} {tid}".format(
-                        qn=frame_queue, tid=task_id))
-
-                cur_op += 1
-                progress_dialog.setValue(cur_op)
-
->>>>>>> feature/dk_arnold_fix
             frame_info = Config()
             for (frame, task_id) in frame_tasks:
                 frame_info.add(str(frame), task_id)
@@ -917,8 +865,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     script_file.write("# generate the ass files...\n")
 
-<<<<<<< HEAD
-=======
                     current_render_layer = render_layer
                     if render_layer == 'masterLayer':
                         current_render_layer = "defaultRenderLayer"
@@ -927,21 +873,10 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     switch_render_layer_cmd += "-currentRenderLayer \"{rl}\"".\
                         format(rl=current_render_layer)
 
->>>>>>> feature/dk_arnold_fix
                     arnold_export_cmd = "arnoldExportAss -f \"{ad}/{fb}_{rl}.ass\" ".\
                         format(ad=scene_dir, fb=file_base, rl=render_layer)
                     arnold_export_cmd += "-startFrame {sf} -endFrame {ef} -frameStep 1 ".\
                         format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
-<<<<<<< HEAD
-                    arnold_export_cmd += "-mask 255 -lightLinks 0 -shadowLinks 0 -cam {cam}".\
-                        format(cam=self._camera)
-                    
-                    frames_scene_cmd = 'maya -batch -proj "{proj}" '.format(
-                        proj=ver_project)
-                    frames_scene_cmd += '-command \'{ar}\' '.format(ar=arnold_export_cmd)
-                    frames_scene_cmd += '-file "{mf}"'.format(mf=maya_file)
-                    script_file.write(frames_scene_cmd + "\n")
-=======
                     arnold_export_cmd += "-mask 255 -lightLinks 1 -shadowLinks 1 -cam {cam}".\
                         format(cam=self._camera)
                     
@@ -951,7 +886,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                         format(srlc=switch_render_layer_cmd, ar=arnold_export_cmd)
                     maya_batch_cmd += '-file "{mf}"'.format(mf=maya_file)
                     script_file.write(maya_batch_cmd + "\n")
->>>>>>> feature/dk_arnold_fix
 
                     script_file.write(
                         "\n# make sure project dir has group permissions\n")
@@ -960,15 +894,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     # submit the frames to render
                     script_file.write("# Submit frames after ass gen \n")
-<<<<<<< HEAD
-                    #for (frame, frame_task) in frame_tasks:
-                        #script_file.write("cqmovetask {qn} {tid}\n".format(
-                            #qn=self._render_queue, tid=frame_task))
-                    
-                    # changed to move group
-                    script_file.write("cqmovetask {qn} {tid}\n".format(
-                        qn=self._render_queue, tid=task_id_base))
-=======
                     for (frame, frame_task) in frame_tasks:
                         script_file.write("cqmovetask {qn} {tid}\n".format(
                             qn=self._render_queue, tid=frame_task))
@@ -976,7 +901,6 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     # changed to move group
                     #script_file.write("cqmovetask {qn} {tid}\n".format(
                         #qn=self._render_queue, tid=task_id_base))
->>>>>>> feature/dk_arnold_fix
 
                 os.chmod(script_path, 0770)
 
