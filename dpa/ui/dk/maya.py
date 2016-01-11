@@ -528,6 +528,16 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             #     db.set(wrangle.baseId, wrangle)
             #     DPAWrangler.AssignWranglerTask("none", task_id_base)
 
+            #  - jtessen  2016-01-11
+            # switch to using a cmd line wrangle item creator to avoid the
+            # bsddb issue
+            wranglecmd = 'cqcreatewrangleitem ' + task_id_base + ' '
+            for f in self._frame_list:
+                wranglecmd = wranglecmd + str(f) + ' '
+            print wranglecmd
+            os.system(wranglecmd)
+                
+
             tasks_info_config.write(tasks_info_file)
             os.chmod(tasks_info_file, 0660)
 
