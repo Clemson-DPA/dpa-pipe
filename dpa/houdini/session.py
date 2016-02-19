@@ -10,13 +10,31 @@ except ImportError:
 else:
     HOU_IMPORTED = True
 
-from dpa.app.session import RemoteMixin, Session, SessionError
+# -----------------------------------------------------------------------------
+# attempt to import hou ui module. if it fails, not in the UI
+try:
+    from PySide import QtCore, QtGui
+except:
+    HOU_UI_IMPORTED = False
+else:
+    HOU_UI_IMPORTED = True
+
+from dpa.app.session import RemoteMixin, Session, SessionRegistry, SessionError
 
 # -----------------------------------------------------------------------------
 class HoudiniSession(RemoteMixin, Session):
 
+    app_name = 'houdini'
+
     # XXX should come from config
     SERVER_EXECUTABLE = "/home/jtomlin/dev/dpa-pipe/bin/dpa_houdini_server"
+
+    # -------------------------------------------------------------------------
+    @classmethod
+    def current(cls):
+        if not HOU_IMPORTED:
+            return None
+        return cls()
 
     # -------------------------------------------------------------------------
     def __init__(self, filepath=None, remote=False):
@@ -66,6 +84,15 @@ class HoudiniSession(RemoteMixin, Session):
     def in_session(self):
         """Returns True if inside a current app session."""
         return HOU_IMPORTED or self.remote_connection
+    
+    # -------------------------------------------------------------------------
+    @property
+    def main_window(self):
+
+        if not HOU_UI_IMPORTED:
+            return None
+
+        return QtGui.QApplication.activeWindow()
 
     # -------------------------------------------------------------------------
     @property
@@ -78,3 +105,6 @@ class HoudiniSession(RemoteMixin, Session):
     def server_executable(self):
         return self.__class__.SERVER_EXECUTABLE
 
+
+# -----------------------------------------------------------------------------
+SessionRegistry().register(HoudiniSession)
