@@ -10,7 +10,6 @@ from PySide import QtCore, QtGui
 from dpa.config import Config
 from dpa.action.registry import ActionRegistry
 from dpa.notify import Notification, emails_from_unames
-from dpa.houdini.utils import create_product_before_render
 from dpa.ptask.area import PTaskArea, PTaskAreaError
 from dpa.ptask import PTask
 from dpa.queue import get_unique_id, create_queue_task
