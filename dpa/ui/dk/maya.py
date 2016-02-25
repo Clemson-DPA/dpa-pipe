@@ -762,7 +762,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     format(proj=ver_project, fb=file_base, fn=frame_padded,
                         rl=render_layer)
 
-                render_cmd = "/opt/solidangle/arnold-maya2014/bin/kick -dw -v 0 -i $ASS_PATH "
+                render_cmd = "/opt/solidangle/arnold-maya2014/bin/kick -dw -v 6 -i $ASS_PATH "
                 render_cmd += "-l /opt/solidangle/arnold-maya2014/shaders "
                 render_cmd += "-o {od} ".format(od=out_file)
                 #render_cmd += "-f {rl} ".format(rl=render_layer)
