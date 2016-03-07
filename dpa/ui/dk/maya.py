@@ -951,6 +951,12 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             #     db = DPAWrangler.GetWranglingDB()
             #     db.set(wrangle.baseId, wrangle)
             #     DPAWrangler.AssignWranglerTask("none", task_id_base)
+            wranglecmd = 'cqcreatewrangleitem ' + task_id_base + ' '
+            for f in self._frame_list:
+                wranglecmd = wranglecmd + str(f) + ' '
+            print wranglecmd
+            os.system(wranglecmd)
+                
 
             tasks_info_config.write(tasks_info_file)
             os.chmod(tasks_info_file, 0660)
