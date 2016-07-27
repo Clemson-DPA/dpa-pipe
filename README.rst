@@ -6,7 +6,10 @@ This is an open source production pipeline framework developed by students, staf
 
 Overview Video (apologies for the audio)
 ========================================
-[![Click to watch a ~30 minute overview of the DPA pipeline](https://raw.githubusercontent.com/wiki/Clemson-DPA/dpa-pipe/images/DPA_Pipe_Overview_Play.png)](https://vimeo.com/176475340)
+
+![TEST](https://raw.githubusercontent.com/wiki/Clemson-DPA/dpa-pipe/images/DPA_Pipe_Overview_Play.png)
+
+(https://vimeo.com/176475340)
 
 Goals
 =====
