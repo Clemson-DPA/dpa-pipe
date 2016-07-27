@@ -4,7 +4,12 @@ DPA Pipeline Framework
 
 This is an open source production pipeline framework developed by students, staff, and faculty in the `Clemson University Digital Production Arts (DPA) <http://clemson.edu/dpa>`_ MFA program. This project was overseen by DPA staff software engineer `Josh Tomlinson <https://github.com/josh-t>`_ and DPA professor `Dr. Jerry Tessendorf <http://people.clemson.edu/~jtessen/>`_, both formerly of Rhythm & Hues Studios. The implementation is primarily based on the talk given at SIGGRAPH 2014 entitled A `Framework for Global Visual Effects Production Pipelines <https://vimeo.com/116364653>`_ by Josh and his former colleagues based on their work at Rhythm & Hues. This project was also introduced at the Global Pipeline Birds of a Feather meeting at SIGGRAPH that same year. 
 
-**The primary goals of this project are to:**
+Overview Video (apologies for the audio)
+========================================
+[![Click to watch a ~30 minute overview of the DPA pipeline](https://raw.githubusercontent.com/wiki/Clemson-DPA/dpa-pipe/images/DPA_Pipe_Overview_Play.png)](https://vimeo.com/176475340)
+
+Goals
+=====
 
 * provide students exposure to a professional quality pipeline that best approximates what they will encounter in the workforce
 * support multi-site workflows
@@ -12,7 +17,8 @@ This is an open source production pipeline framework developed by students, staf
 * expose DPA to possible outreach opportunities with industry collaborators
 * expose pipeline and workflow concepts to undergraduate programs that may feed interested students into DPA
 
-**Features of the framework include:**
+Features
+========
 
 * No assumptions made about the type of work being done, the type of data being shared, or the content creation software being used
 * Flexible, adaptable project hierarchy
@@ -21,8 +27,9 @@ This is an open source production pipeline framework developed by students, staf
 * Customizable workflow actions
 * Basic workflow support for common content creation applications
 
-Key components
---------------
+Components
+==============
+
 **Django backend:**
 
 A django backend defines the data models for the framework. The Django REST framework provides a REST API that is consistent across all data models and used by the front end python APIs.  In the long term, it would be nice to provide a layer to support a Shotgun backend as well. 
@@ -52,7 +59,7 @@ Actions are custom behaviors that define a project's workflow. Actions are imple
 The framework provides Session and Entity APIs for defining common behaviors and interfaces for content creation packages and the importable/exportable items within them. The framework has some simple implementations that drive DPAs Maya, Mari, Nuke, and Houdini workflows allow the same tools and interfaces to be used across all of these packages.
 
 Get involved
-------------
+============
 
 The code in this repository represents the state of the framework's development to this point. The codebase should not be considered a drop-in, ready-to-use pipeline solution. We consider this project a continual work-in-progress that currently needs some hand-holding, yet is a functioning system for building and executing a digital production pipeline. The framework is currently in use by DPA students as they complete an intense summer mentorship program with `Dreamworks Animation <http://www.dreamworksanimation.com>`_.
 
