@@ -23,8 +23,8 @@ DK_CONFIG_PATH = "config/notify/dk.cfg"
 class NukeDarkKnightDialog(BaseDarkKnightDialog):
 
     # XXX meh.
-    RENDER_QUEUES = ['nuke', 'muenster', 'cheddar', 'gouda', 'goat', 'hold',
-        'velveeta', 'cheezwhiz']
+    RENDER_QUEUES = ['nuke', 'muenster', 'cheddar', 'hold',
+        'velveeta', 'cheezwhiz', 'brie']
 
     # -------------------------------------------------------------------------
     def __init__(self, parent=None):
