@@ -30,9 +30,9 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
     # FIXME: i don't want to hardcode this stuff ...
     OUTPUT_FILE_TYPES = ['exr']
     RENDER_QUEUES = ['muenster', 'cheddar', 'hold', 'nuke', 'velveeta', 
-        'cheezwhiz']
+        'cheezwhiz', 'brie']
     RIBGEN_QUEUES = ['cheddar','muenster', 'hold', 'nuke', 'velveeta', 
-        'cheezwhiz']
+        'cheezwhiz', 'brie']
     RENDERERS = ['Renderman', 'Arnold']
 
     # -------------------------------------------------------------------------
