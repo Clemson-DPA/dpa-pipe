@@ -20,6 +20,7 @@ class MapsEntity(Entity):
         """Export this entity to a product."""
 
         tex_convert = kwargs.get('tex_convert', True)
+        tx_convert = kwargs.get('tx_convert', True)
         queue_group = kwargs.get('queue_group', {})
         tex_queue = queue_group.get('tex_queue', True)
         queue_name = queue_group.get('queue_name', [None])[0]
@@ -30,6 +31,12 @@ class MapsEntity(Entity):
         if tex_convert:
             product_reprs.extend(
                 self._tex_convert(product_desc, version_note, tif_product_repr, 
+                    tex_queue, queue_name=queue_name)
+            )
+
+        if tx_convert:
+            product_reprs.extend(
+                self._tx_convert(product_desc, version_note, tif_product_repr, 
                     tex_queue, queue_name=queue_name)
             )
 
@@ -69,6 +76,7 @@ class MapsEntity(Entity):
         return product_repr  
 
     # -------------------------------------------------------------------------
+    ### Convert textures optimized for Renderman: .tex convert
     def _tex_convert(self, product_desc, version_note, tif_product_repr, queue,
         queue_name=None):
 
@@ -120,6 +128,60 @@ class MapsEntity(Entity):
         tex_product_repr.area.set_permissions(0660)
         
         return [tex_product_repr]  
+
+    # -------------------------------------------------------------------------
+    ### Convert textures optimized for Arnold: .tx convert
+    def _tx_convert(self, product_desc, version_note, tif_product_repr, queue,
+        queue_name=None):
+
+        now = datetime.datetime.now()
+
+        tx_product_repr = self._create_product(
+            product_desc, version_note, 'tx')
+
+        tx_dir = tx_product_repr.directory
+        tif_dir = tif_product_repr.directory
+
+        if not os.path.exists(tif_dir):
+            raise EntityError("TIF files must exist prior to TX conversion.")
+
+        try:
+            tif_files = [f for f in os.listdir(tif_dir) if f.endswith('.tif')]
+            self.session.mari.app.startProcessing(
+                'Converting existing .tif to .tx', len(tif_files) + 1, True)
+            self.session.mari.app.setProgress(0)
+
+            for (count, tif_file) in enumerate(tif_files):
+                self.session.mari.app.setProgress(count)
+                (file_base, tif_ext) = os.path.splitext(tif_file)
+                tx_file = file_base + '.tx'
+
+                tif_file = os.path.join(tif_dir, tif_file)
+                tx_file = os.path.join(tx_dir, tx_file)
+
+                maketx = self.session.require_executable('maketx')
+                txcmd = '{maketx} -v -u -oiio {tif} -o {tx}'.format(
+                    maketx=maketx, tif=tif_file, tx=tx_file)
+
+                if queue:
+                    queue_submit_cmd(txcmd, queue_name, output_file=tx_file,
+                        id_extra=file_base.replace(".", "_"),
+                        dt=now)
+                else:
+                    os.system(txcmd)
+
+            self.session.mari.app.stopProcessing()
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self.session.mari.app.stopProcessing()
+            self.session.mari.utils.message("Error with conversion. "
+                "Please make sure folders are chmodded correctly/files exist.")
+
+        tx_product_repr.area.set_permissions(0660)
+        
+        return [tx_product_repr]  
 
     # -------------------------------------------------------------------------
     @classmethod
