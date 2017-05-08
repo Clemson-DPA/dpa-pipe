@@ -108,12 +108,9 @@ class MapsEntity(Entity):
             snapshot = channel.createSnapshot('Backup pre-flattening', name)
             layer = channel.flatten()
             image_set = layer.imageSet()
-            self.session.mari.utils.message("Wrap imageset in ptex")
             ptex = self.session.mari.Ptex(image_set)
 
-            self.session.mari.utils.message("exportToPtexFile start")
             ptex.exportToPtexFile(export_path, inc_geo, inc_adj, gen_mipmaps, inc_user_attr, remap_quads)
-            self.session.mari.utils.message("exportToPtexFile done")
 
             self.session.mari.history.stopMacro()
 
