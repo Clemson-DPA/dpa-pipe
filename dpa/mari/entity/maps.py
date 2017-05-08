@@ -25,20 +25,28 @@ class MapsEntity(Entity):
         tex_queue = queue_group.get('tex_queue', True)
         queue_name = queue_group.get('queue_name', [None])[0]
 
-        tif_product_repr = self._tif_export(product_desc, version_note)
-        product_reprs = [tif_product_repr]
+        ptex_options = kwargs.get('ptex_options', {})
 
-        if tex_convert:
-            product_reprs.extend(
-                self._tex_convert(product_desc, version_note, tif_product_repr, 
-                    tex_queue, queue_name=queue_name)
-            )
+        product_reprs = []
 
-        if tx_convert:
-            product_reprs.extend(
-                self._tx_convert(product_desc, version_note, tif_product_repr, 
-                    tex_queue, queue_name=queue_name)
-            )
+        if self.session.mari.geo.current().channel(self.display_name).isPtex():
+            ptex_product_repr = self._ptex_export(product_desc, version_note, ptex_options)
+            product_reprs = [ptex_product_repr]
+        else:
+            tif_product_repr = self._tif_export(product_desc, version_note)
+            product_reprs = [tif_product_repr]
+
+            if tex_convert:
+                product_reprs.extend(
+                    self._tex_convert(product_desc, version_note, tif_product_repr, 
+                        tex_queue, queue_name=queue_name)
+                )
+
+            if tx_convert:
+                product_reprs.extend(
+                    self._tx_convert(product_desc, version_note, tif_product_repr, 
+                        tex_queue, queue_name=queue_name)
+                )
 
         return product_reprs
 
@@ -59,8 +67,8 @@ class MapsEntity(Entity):
             channel = self.session.mari.geo.current().channel(name)
             snapshot = channel.createSnapshot('Backup pre-flattening', name)
             layer = channel.flatten()
-            imgage_set = layer.imageSet()
-            imgage_set.exportImages(export_path)
+            image_set = layer.imageSet()
+            image_set.exportImages(export_path)
 
             self.session.mari.history.stopMacro()
 
@@ -73,7 +81,52 @@ class MapsEntity(Entity):
 
         product_repr.area.set_permissions(0660)
         
-        return product_repr  
+        return product_repr
+
+    # -------------------------------------------------------------------------
+    def _ptex_export(self, product_desc, version_note, ptex_options):
+
+        file_ext = 'ptx'
+
+        inc_geo = ptex_options.get('ptex_inc_geo', False)
+        inc_adj = ptex_options.get('ptex_inc_adj', True)
+        gen_mipmaps = ptex_options.get('ptex_gen_mipmaps', True)
+        inc_user_attr = ptex_options.get('ptex_inc_user_attr', True)
+        remap_quads = ptex_options.get('ptex_remap_quads', False)
+
+        product_repr = self._create_product(product_desc, version_note, file_ext)
+        product_repr_dir = product_repr.directory
+        name = self.display_name
+
+        export_path = os.path.join(product_repr_dir, name + '.' + file_ext)
+
+        # mari specific
+        self.session.mari.history.startMacro('Exporting ' + name + ' Channel')
+
+        try:
+            channel = self.session.mari.geo.current().channel(name)
+            snapshot = channel.createSnapshot('Backup pre-flattening', name)
+            layer = channel.flatten()
+            image_set = layer.imageSet()
+            self.session.mari.utils.message("Wrap imageset in ptex")
+            ptex = self.session.mari.Ptex(image_set)
+
+            self.session.mari.utils.message("exportToPtexFile start")
+            ptex.exportToPtexFile(export_path, inc_geo, inc_adj, gen_mipmaps, inc_user_attr, remap_quads)
+            self.session.mari.utils.message("exportToPtexFile done")
+
+            self.session.mari.history.stopMacro()
+
+            channel.revertToSnapshot(snapshot)
+            channel.deleteSnapshot(snapshot)
+        except Exception as e:
+            self.session.mari.history.stopMacro()
+            self.session.mari.history.undo()
+            self.session.mari.utils.message("Error with ptex export.")
+
+        product_repr.area.set_permissions(0660)
+        
+        return product_repr
 
     # -------------------------------------------------------------------------
     ### Convert textures optimized for Renderman: .tex convert
