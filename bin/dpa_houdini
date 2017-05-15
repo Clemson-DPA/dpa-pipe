@@ -15,7 +15,7 @@
 set -eu
 
 # Set Houdini location to site-configured default if it doesn't exist.
-HFS="/opt/hfs13"
+HFS="/opt/hfs16"
 
 # Source Houdini setup.
 pushd "${HFS}" >/dev/null
