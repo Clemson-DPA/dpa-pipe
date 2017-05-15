@@ -78,7 +78,7 @@ class MapsEntity(MayaEntity):
 
         # ---- create surface shader if it doesn't exist
 
-        shader_type = 'RMSGPSurface'
+        shader_type = 'PxrSurface'
         shader_name = "shader_{on}".format(on=obj_name)
 
         if not session.cmds.ls(shader_name):
