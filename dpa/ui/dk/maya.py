@@ -459,14 +459,14 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     script_file.write("# generate the ribs...\n")
 
-                    job_scene_cmd = 'maya -batch -proj "{proj}" '.format(
+                    job_scene_cmd = 'maya2016 -batch -proj "{proj}" '.format(
                         proj=ver_project)
                     job_scene_cmd += '-command "renderManBatchGenRibForLayer {li} {sf} {ef} 1" '.\
                         format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
                     job_scene_cmd += '-file "{mf}"'.format(mf=maya_file)
                     script_file.write(job_scene_cmd + "\n")
 
-                    frames_scene_cmd = 'maya -batch -proj "{proj}" '.format(
+                    frames_scene_cmd = 'maya2016 -batch -proj "{proj}" '.format(
                         proj=ver_project)
                     frames_scene_cmd += '-command "renderManBatchGenRibForLayer {li} {sf} {ef} 2" '.\
                         format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
@@ -762,8 +762,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     format(proj=ver_project, fb=file_base, fn=frame_padded,
                         rl=render_layer)
 
-                render_cmd = "/opt/solidangle/arnold-maya2014/bin/kick -dw -v 6 -i $ASS_PATH "
-                render_cmd += "-l /opt/solidangle/arnold-maya2014/shaders "
+                render_cmd = "/opt/solidangle/arnold-maya2016/bin/kick -dw -v 6 -i $ASS_PATH "
+                render_cmd += "-l /opt/solidangle/arnold-maya2016/shaders "
                 render_cmd += "-o {od} ".format(od=out_file)
                 #render_cmd += "-f {rl} ".format(rl=render_layer)
                 #render_cmd += "-p {proj} ".format(proj=ver_project)
@@ -890,7 +890,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     arnold_export_cmd += "-mask 255 -lightLinks 1 -shadowLinks 1 -cam {cam}".\
                         format(cam=self._camera)
                     
-                    maya_batch_cmd = 'maya -batch -proj "{proj}" '.format(
+                    maya_batch_cmd = 'maya2016 -batch -proj "{proj}" '.format(
                         proj=ver_project)
                     maya_batch_cmd += '-command \'{srlc}; {ar}\' '.\
                         format(srlc=switch_render_layer_cmd, ar=arnold_export_cmd)
