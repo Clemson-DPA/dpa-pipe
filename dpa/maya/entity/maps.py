@@ -12,10 +12,12 @@ class MapsEntity(MayaEntity):
     def import_product_representation(cls, session, representation, *args,
         **kwargs):
         shader_name = kwargs.get('shader', False)[0]
-        if( shader_name == 'RMSGPSurface' ):
+        if( shader_name == 'PxrSurface' ):
             MapsEntity.rendermanImport(session, representation, kwargs)
         elif( shader_name == 'aiStandard' ):
             MapsEntity.arnoldImport(session, representation, kwargs)
+        elif( shader_name == 'aiStandardSurface' ):
+            MapsEntity.arnold5Import(session, representation, kwargs)
         elif( shader_name == 'PtexSurface'):
             MapsEntity.ptexImport(session, representation, kwargs)
 
@@ -233,8 +235,96 @@ class MapsEntity(MayaEntity):
         # TRANSPARENCY
         ## not supported for now
 
+        # Set Default Render to Arnold so texture path gets setup automatically
+        session.cmds.setAttr("defaultRenderGlobals.currentRenderer", "arnold", type="string")
+
         #temp, sets arnold texture path, should be set on dpaopen most likely
         session.cmds.setAttr( 'defaultArnoldRenderOptions.texture_searchpath', session.ptask_area.path, type="string" )
+
+    @classmethod
+    def arnold5Import(cls, session, representation, kwargs):
+        print "arnold create"
+
+        session.require_plugin('mtoa')
+
+        ## Same as renderman ##
+        product_version = representation.product_version
+        product = product_version.product
+
+        product_name_parts = product.name.split("_")
+        maps_type = product_name_parts.pop()
+        obj_name = "_".join(product_name_parts)
+
+        # ---- file read node
+
+        file_node_name = "file_{pn}".format(pn=product.name)
+        file_node = session.cmds.shadingNode('file', asTexture=True,
+            name=file_node_name)
+
+        # set UDIM/ATLAS support to mari
+        current_file = session.cmds.file(q=True, sceneName=True)
+        import_base = cls.get_import_file_common_base(session,
+            product.name, product.category, representation,
+            relative_to=None
+        )
+        ## changed to arnold replacement token <udim>
+        map_path = import_base + '.<udim>.' + representation.type
+        session.cmds.setAttr(file_node + '.fileTextureName', map_path,
+            type="string")
+        session.cmds.setAttr(file_node + '.filterType', 0)
+        session.cmds.setAttr(file_node + '.colorProfile', 0)
+        ##
+
+        # ---- create surface shader if it doesn't exist
+
+        shader_type = 'aiStandardSurface'
+        shader_name = "shader_{on}".format(on=obj_name)
+
+        if not session.cmds.ls(shader_name):
+            session.cmds.shadingNode(shader_type, asShader=True,
+                name=shader_name)
+
+        # ---- type specific attributes and connections
+
+        connect = kwargs.get('connect', True)
+
+        # DIFFUSE
+        if maps_type in ['diff', 'diffuse', 'diffMap', 'diffuseMap']:
+
+            if connect:
+                session.cmds.connectAttr(file_node + '.outColor',
+                    shader_name + '.baseColor')
+
+        # SPECULAR
+        elif maps_type in ['spec', 'specular', 'specMap', 'specularMap']:
+
+            if connect:
+                session.cmds.connectAttr(file_node + '.outColor',
+                    shader_name + '.specularColor')
+
+        # BUMP
+        elif maps_type in ['bump', 'bumpMap']:
+
+            session.cmds.setAttr(file_node + '.alphaIsLuminance', 1)
+
+            bump_node = session.cmds.shadingNode('bump2d', asTexture=True)
+
+            if connect:
+                session.cmds.connectAttr( file_node + '.outAlpha',
+                    bump_node + '.bumpValue')
+                session.cmds.connectAttr( bump_node + '.outNormal',
+                    shader_name + '.normalCamera')
+
+        # TRANSPARENCY
+        ## not supported for now
+
+        # Set Default Render to Arnold so texture path gets setup automatically
+        session.cmds.setAttr("defaultRenderGlobals.currentRenderer", "arnold", type="string")
+
+        #temp, sets arnold texture path, should be set on dpaopen most likely
+        session.cmds.setAttr( 'defaultArnoldRenderOptions.texture_searchpath', session.ptask_area.path, type="string" )
+
+
 
     @classmethod
     def ptexImport(cls, session, representation, kwargs):
