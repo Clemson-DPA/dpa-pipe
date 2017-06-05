@@ -4,6 +4,7 @@
 import datetime
 import os
 import shutil
+import re
 
 from PySide import QtCore, QtGui
 
@@ -1013,6 +1014,9 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
             # current layer
             render_layers.append(self.session.cmds.editRenderLayerGlobals(
                 query=True, currentRenderLayer=True))
+
+        regex = re.compile("defaultRenderLayer[0-9]+")
+        render_layers = [x for x in render_layers if not regex.match(x)]
 
         if "defaultRenderLayer" in render_layers:
             i = render_layers.index("defaultRenderLayer")
