@@ -778,7 +778,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                     # 'kick' command has to be added to $PATH
                     # Create env variable for Arnold License server
-                    script_file.write("export solidangle_LICENSE=5053@license2.cs.clemson.edu\n\n")
+                    script_file.write("export ADSKFLEX_LICENSE_FILE=@license3.cs.clemson.edu\n\n")
 
                     script_file.write("# set the ptask version to render\n")
                     script_file.write(dpaset_cmd + "\n")
