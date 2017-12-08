@@ -30,8 +30,8 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
     # FIXME: i don't want to hardcode this stuff ...
     OUTPUT_FILE_TYPES = ['exr']
-    RENDER_QUEUES = ['cheddar', 'hold', 'nuke', 'velveeta', 'cheezwhiz', 'brie']
-    RIBGEN_QUEUES = ['muenster','cheddar', 'hold', 'nuke', 'velveeta', 'cheezwhiz', 'brie']
+    RENDER_QUEUES = ['cheddar', 'nuke', 'velveeta', 'cheezwhiz', 'muenster', 'brie', 'hold']
+    RIBGEN_QUEUES = ['rathgore', 'cheddar', 'nuke', 'velveeta', 'cheezwhiz', 'brie', 'hold']
     RENDERERS = ['Renderman', 'Arnold']
 
     # -------------------------------------------------------------------------
@@ -763,6 +763,7 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
 
                 render_cmd = "/opt/solidangle/arnold-maya2016/bin/kick -dw -v 6 -i $ASS_PATH "
                 render_cmd += "-l /opt/solidangle/arnold-maya2016/shaders "
+                render_cmd += "-l /opt/solidangle/arnold-maya2016/procedurals "
                 render_cmd += "-o {od} ".format(od=out_file)
                 #render_cmd += "-f {rl} ".format(rl=render_layer)
                 #render_cmd += "-p {proj} ".format(proj=ver_project)
@@ -783,6 +784,9 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                     script_file.write("# set the ptask version to render\n")
                     script_file.write(dpaset_cmd + "\n")
                     script_file.write("cd " + ver_project + "\n\n")
+                    
+                    # Add necessary paths to the environment for XGen
+                    script_file.write("export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/autodesk/maya2016/plug-ins/xgen/lib:/usr/autodesk/maya2016/lib:/opt/solidangle/arnold-maya2016/bin\n\n")
 
                     # the logic for determining which ass will be generated is
                     # unclear at this point. So we'll build a conditional
@@ -886,8 +890,9 @@ class MayaDarkKnightDialog(BaseDarkKnightDialog):
                         format(ad=scene_dir, fb=file_base, rl=render_layer)
                     arnold_export_cmd += "-startFrame {sf} -endFrame {ef} -frameStep 1 ".\
                         format(li=layer_index, sf=self._frange.start, ef=self._frange.end)
-                    arnold_export_cmd += "-mask 255 -lightLinks 1 -shadowLinks 1 -cam {cam}".\
+                    arnold_export_cmd += "-mask 255 -lightLinks 1 -shadowLinks 1 -cam {cam} ".\
                         format(cam=self._camera)
+                    arnold_export_cmd += "-expandProcedurals "
                     
                     maya_batch_cmd = 'maya2016 -batch -proj "{proj}" '.format(
                         proj=ver_project)
